@@ -1,0 +1,111 @@
+{
+  "rule_id": "business.order_process_v1",
+  "version": "0.1.0",
+  "description": "电商订单处理规则 - VIP折扣 + 库存检查 + 通知",
+  "metadata": {
+    "author": "llm-generated",
+    "created_at": "2026-07-24T10:00:00Z",
+    "natural_language": "当新订单来时，先检查库存是否充足（>=10）。如果是VIP客户则打9折，然后更新库存并发送确认通知；如果库存不足则发送预警给管理员。"
+  },
+  "core_eval": [
+    {
+      "type": "branch",
+      "params": {
+        "domain": {
+          "type": "exists",
+          "path": "__exec__.payload.order"
+        },
+        "on_true": [
+          {
+            "type": "branch",
+            "params": {
+              "domain": {
+                "type": "exists",
+                "path": "__exec__.payload.customer.is_vip"
+              },
+              "on_true": [
+                {
+                  "type": "set",
+                  "params": {
+                    "attr": "__exec__.payload.order.final_amount",
+                    "operation": "set",
+                    "value": "__exec__.payload.order.amount"
+                  }
+                },
+                {
+                  "type": "set",
+                  "params": {
+                    "attr": "__exec__.payload.order.discount",
+                    "operation": "set",
+                    "value": 10
+                  }
+                },
+                {
+                  "type": "io_request",
+                  "params": {
+                    "io_type": "call_external",
+                    "prompt": "VIP客户享受9折优惠"
+                  }
+                }
+              ],
+              "on_false": [
+                {
+                  "type": "set",
+                  "params": {
+                    "attr": "__exec__.payload.order.final_amount",
+                    "operation": "set",
+                    "value": "__exec__.payload.order.amount"
+                  }
+                },
+                {
+                  "type": "set",
+                  "params": {
+                    "attr": "__exec__.payload.order.discount",
+                    "operation": "set",
+                    "value": 0
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "type": "branch",
+            "params": {
+              "domain": {
+                "type": "exists",
+                "path": "__exec__.payload.inventory.sufficient"
+              },
+              "on_true": [
+                {
+                  "type": "set",
+                  "params": {
+                    "attr": "__exec__.payload.inventory.count",
+                    "operation": "sub",
+                    "value": "__exec__.payload.order.quantity"
+                  }
+                },
+                {
+                  "type": "io_request",
+                  "params": {
+                    "io_type": "call_service",
+                    "prompt": "发送订单确认通知"
+                  }
+                }
+              ],
+              "on_false": [
+                {
+                  "type": "io_request",
+                  "params": {
+                    "io_type": "call_external",
+                    "prompt": "库存不足预警"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "on_false": []
+      }
+    }
+  ]
+}
