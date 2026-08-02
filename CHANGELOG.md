@@ -7,6 +7,59 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/),遵循 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [0.1.1] - 2026-08-03
+
+### AssistantProvider 扩展槽 + dist/ 发布策略
+
+v0.1.1 为大众版(`evorule-console-cloud`)开发铺路:在内核中预留 LLM 辅助扩展槽,并确立 `dist/` 强制提交的发版策略,使大众版能通过 git URL 直接安装内核而无需本地构建。
+
+> 内核本身依然「无 LLM、无联网」— 扩展槽默认 `null`,不引入任何 LLM 依赖。大众版注入实现后,视图的 LLM 按钮才渲染。
+
+### 新增
+
+- **`AssistantProvider` 接口**(`src/lib/assistant/types.ts`):单轮 LLM 辅助接口,3 方法
+  - `generateRuleDraft(nl)`:自然语言 → JSON 规则草案(用户审核后生效,不破坏「规则即数据」)
+  - `explainRule(rule)`:JSON 规则 → 自然语言说明(只读)
+  - `generateInput(desc)`:自然语言 → 测试输入 JSON(辅助填表)
+  - 硬约束(对齐 MASS_EDITION §2.4):不做多轮 agent 编排、不做 tool calling、不做自动执行、不改 fact log
+- **Svelte context 注入机制**(`src/lib/assistant/assistant-context.ts`):
+  - `provideAssistant(provider?)`:在根布局注入实现(默认 `null`)
+  - `useAssistantOrNull()`:视图按需取用,无注入则返回 `null`
+- **视图 LLM 按钮槽**(条件渲染,assistant 为 null 时不渲染):
+  - 规则库视图:`AI 辅助创建` / `解释规则` 两个按钮(经 `onaiGenerateDraft` / `onaiExplainRule` 回调)
+  - 执行台视图:`AI 生成输入` 按钮(经 `onaiGenerateInput` 回调)
+- **npm 包导出**:`src/lib/index.ts` 导出 `AssistantProvider` 类型 + `provideAssistant` / `useAssistantOrNull`,大众版可 `import { type AssistantProvider, provideAssistant } from '@evorule/console'`
+- **`dist/` 发布策略**(发版 SOP):`.gitignore` 仍忽略 `dist/`(开发期不污染 git),但发版时用 `git add -f dist/` 强制提交 prepack 产物,使大众版能 `npm install git+https://...evorule-console.git#v0.1.1` 直接安装,无需本地 `npm run prepack`
+
+### 变更
+
+- `package.json` `version`:`0.1.0` → `0.1.1`
+- `src/lib/index.ts` `CONSOLE_VERSION`:`'0.1.0'` → `'0.1.1'`
+- `README.md` 版本徽标:`0.1.0` → `0.1.1`
+
+### 测试
+
+| 测试            | 命令                              | 结果                          | 耗时   |
+| --------------- | --------------------------------- | ----------------------------- | ------ |
+| 单元测试(vitest) | `npm run test:unit`               | ✅ 9 files / 265 tests passed | 3.90s  |
+| 类型检查         | `npm run check`                   | ✅ 0 errors / 0 warnings      | ~5s    |
+| e2e(单 worker) | `npm run test`                    | ✅ 13/13 passed               | ~1.5m  |
+| npm 包           | `npm run prepack`                 | ✅ 产出 `dist/`              | —      |
+
+**回归验证**:AssistantProvider 改动不破坏 v0.1.0 既有行为 — 视图在未注入 provider 时,LLM 按钮不渲染,与 v0.1.0 视觉/行为完全一致(13 e2e 全过)。
+
+### 已知限制
+
+- v0.1.1 仍是开发期基线,不发布到 npm registry,仅作 git tag
+- `dist/` 强制提交只在发版 tag 时进行,日常 commit 仍按 `.gitignore` 忽略 `dist/`
+- 大众版注入的 LLM 实现需自行保证 API key 安全(不硬编码,经环境变量 / 用户输入)
+
+### 依赖
+
+无新增运行时依赖(扩展槽是纯接口,无 LLM SDK 引入)。
+
+---
+
 ## [0.1.0] - 2026-08-03
 
 ### 首次发布

@@ -28,10 +28,10 @@
 		createSession,
 		selectSession,
 		submitCommand
-	} from '$lib/stores/session';
-	import { selectedRule } from '$lib/stores/rules';
-	import { useBackendOrNull } from '$lib/backend/backend-context';
-	import { useAssistantOrNull } from '$lib/assistant/assistant-context';
+	} from '../../stores/session';
+	import { selectedRule } from '../../stores/rules';
+	import { useBackendOrNull } from '../../backend/backend-context';
+	import { useAssistantOrNull } from '../../assistant/assistant-context';
 	import JsonTree from '../StateView/JsonTree.svelte';
 
 	// LLM 扩展槽:大众版注入 assistant + callback 后,渲染 AI 生成输入按钮

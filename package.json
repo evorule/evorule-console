@@ -1,6 +1,6 @@
 {
   "name": "@evorule/console",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "evorule-console — evorule 灵魂产品内核(无 LLM、无联网的完整规则引擎面板,SvelteKit 应用 + npm 包双形态)",
   "license": "AGPL-3.0-or-later",
   "type": "module",

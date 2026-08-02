@@ -13,83 +13,16 @@
 //   - 公共 API(类型/接口/store 函数/视图组件)— 导出
 //   - 内部实现细节(ttd 算法/内部 helper)— 不导出
 //   - AssistantProvider 扩展槽(v0.1.1 加入):默认 null,大众版注入 LLM 实现
-
-// ============================================================================
-// 1. 执行后端抽象(SPEC §1.2)— 大众版/高级版实现此接口
-// ============================================================================
-export type {
-  SessionId,
-  ReactorState,
-  SessionState,
-  SessionAudit,
-  VerifyResult,
-  Fact,
-  DiffResult,
-  CausalChain,
-  CommandResult,
-  ExecutionBackend
-} from './backend/types';
-
 export { HttpBackend } from './backend/http-backend';
-export {
-  provideBackend,
-  useBackend,
-  useBackendOrNull
-} from './backend/backend-context';
-
-// ============================================================================
-// 2. AssistantProvider 扩展槽(v0.1.1)— LLM 辅助接口,默认 null
-// ============================================================================
-// evorule-console 自身不引入 LLM 依赖,只定义扩展槽(默认 null)。
-// 大众版注入 CloudLlmAssistant 实现后,视图的 LLM 按钮才渲染。
-// 详见 src/lib/assistant/types.ts
-export type { AssistantProvider } from './assistant/types';
+export { provideBackend, useBackend, useBackendOrNull } from './backend/backend-context';
 export { provideAssistant, useAssistantOrNull } from './assistant/assistant-context';
-
 // ============================================================================
 // 3. 状态 stores(跨视图共享)
 // ============================================================================
 export { rules, selectedRuleId, selectedRule, selectRule, addRule, updateRule, deleteRule } from './stores/rules';
-export type { Rule } from './stores/rules';
-
-export {
-  sessions,
-  currentSessionId,
-  sessionState,
-  commandHistory,
-  isLoading,
-  lastError,
-  reactorVersion,
-  refreshSessions,
-  createSession,
-  selectSession,
-  submitCommand
-} from './stores/session';
-export type { CommandHistoryEntry } from './stores/session';
-
-export {
-  auditData,
-  verifyResult,
-  causalSelection,
-  auditLoading,
-  auditError,
-  refreshAudit,
-  verifyAuditChain,
-  fetchCausalChain,
-  clearCausalSelection,
-  resetAuditStore
-} from './stores/audit';
-export type { CausalSelection } from './stores/audit';
-
-export {
-  currentView,
-  setView,
-  restoreView,
-  getViewMeta,
-  VIEW_LIST
-} from './stores/view';
-export type { ViewId, ViewMeta } from './stores/view';
-
+export { sessions, currentSessionId, sessionState, commandHistory, isLoading, lastError, reactorVersion, refreshSessions, createSession, selectSession, submitCommand } from './stores/session';
+export { auditData, verifyResult, causalSelection, auditLoading, auditError, refreshAudit, verifyAuditChain, fetchCausalChain, clearCausalSelection, resetAuditStore } from './stores/audit';
+export { currentView, setView, restoreView, getViewMeta, VIEW_LIST } from './stores/view';
 // ============================================================================
 // 4. 视图组件(5 视图,展现 evorule 7 大本质)
 // ============================================================================
@@ -98,13 +31,10 @@ export { default as ExecutionPadView } from './views/ExecutionPad/ExecutionPad.s
 export { default as StateView } from './views/StateView/StateView.svelte';
 export { default as AuditView } from './views/AuditView/AuditView.svelte';
 export { default as TimeTravelView } from './views/TimeTravel/TimeTravel.svelte';
-
 // ============================================================================
 // 5. L_console 预校验(G1-G7,与核心仓 TCB 对齐)
 // ============================================================================
 export { RuleValidator } from './validators/ruleValidator';
-export type { ValidationError, ValidationResult } from './validators/ruleValidator';
-
 // ============================================================================
 // 6. 版本信息
 // ============================================================================

@@ -26,9 +26,9 @@
     deleteRule,
     importRule,
     exportRule,
-  } from "$lib/stores/rules";
+  } from "../../stores/rules";
   import RuleEditor from "./RuleEditor.svelte";
-  import { useAssistantOrNull } from "$lib/assistant/assistant-context";
+  import { useAssistantOrNull } from "../../assistant/assistant-context";
 
   // LLM 扩展槽:大众版注入 assistant + callback 后,渲染 AI 辅助按钮
   // evorule-console 自身不注入(assistant 为 null),按钮不渲染
