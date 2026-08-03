@@ -201,6 +201,22 @@ describe('HttpBackend', () => {
             expect(r.accepted).toBe(false);
             expect(r.error).toBe('invalid instruction');
         });
+        // 2026-08-03 dogfooding 发现: evorule-server 实际返回 { success, message, fact_id }
+        // 而非契约 { accepted, version },submitCommand 需适配
+        it('evorule-server 响应格式 { success, message, fact_id } → accepted=true', async () => {
+            mockFetch.route('POST', /\/api\/sessions\/3\/command$/, () => jsonResponse({ success: true, message: 'Command submitted', fact_id: 30000 }));
+            const r = await backend.submitCommand(3, { type: 'set', params: { value: 1 } });
+            expect(r.accepted).toBe(true);
+            expect(r.error).toBeUndefined();
+            // version 不在 command 响应中,前端通过 refreshSessionState 获取
+            expect(r.version).toBeUndefined();
+        });
+        it('evorule-server 拒绝时 { success: false, message } → accepted=false + error', async () => {
+            mockFetch.route('POST', /\/api\/sessions\/3\/command$/, () => jsonResponse({ success: false, message: 'rule validation failed' }));
+            const r = await backend.submitCommand(3, { bad: true });
+            expect(r.accepted).toBe(false);
+            expect(r.error).toBe('rule validation failed');
+        });
     });
     // --------------------------------------------------------------------------
     // === 历史 / 回放 ===

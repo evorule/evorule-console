@@ -173,12 +173,31 @@ export class HttpBackend implements ExecutionBackend {
   /**
    * POST /api/sessions/{id}/command (body: { instruction })
    * 对齐 ttd api.js command() 的 body 形式。
+   *
+   * 响应适配(2026-08-03 dogfooding 发现):
+   *   evorule-server 实际返回: { success, message, fact_id }
+   *   CommandResult 契约期望:   { accepted, version?, error? }
+   *   这里做字段映射,兼容两种格式(优先 accepted,回退 success)。
+   *   version 不在 command 响应中返回,前端通过 refreshSessionState 获取。
    */
   async submitCommand(id: SessionId, instruction: object): Promise<CommandResult> {
-    return this.fetchJson<CommandResult>(
+    const raw = await this.fetchJson<Record<string, unknown>>(
       `/api/sessions/${id}/command`,
       this.postJson({ instruction })
     );
+    // 兼容两种响应格式:
+    //   evorule-server: { success: true, message: "Command submitted", fact_id: 30000 }
+    //   理想契约:     { accepted: true, version: 6 }
+    const accepted =
+      typeof raw.accepted === 'boolean' ? raw.accepted : Boolean(raw.success);
+    const result: CommandResult = { accepted };
+    if (typeof raw.version === 'number') result.version = raw.version;
+    if (typeof raw.error === 'string') {
+      result.error = raw.error;
+    } else if (!accepted && typeof raw.message === 'string') {
+      result.error = raw.message;
+    }
+    return result;
   }
 
   // ------------------------------------------------------------------------
