@@ -7,7 +7,7 @@
 // localStorage mock 模式对齐 rule-library.test.ts(vitest node 环境无原生 localStorage)
 
 import { describe, test, expect, beforeEach, vi } from 'vitest';
-import { currentView, setView, restoreView, VIEW_LIST, getViewMeta, type ViewId } from './view';
+import { currentView, restored, setView, restoreView, VIEW_LIST, getViewMeta, type ViewId } from './view';
 
 // ============ localStorage mock(对齐 rule-library.test.ts 模式) ============
 
@@ -29,6 +29,7 @@ const STORAGE_KEY = 'evorule-console:current-view';
 /** 重置 store 到默认值 + 清空 localStorage mock */
 function resetStore(): void {
   currentView.set('rules');
+  restored.set(false);
   mockLocalStorage.clear();
 }
 
@@ -158,5 +159,47 @@ describe('restoreView', () => {
       expect(value).toBe(v.id);
       unsub();
     });
+  });
+});
+
+// ============ restored 标志(竞态修复) ============
+// 依据: +page.svelte 的 $effect 等待 restored=true 后再判断是否重定向到 /workspace。
+// 修复子组件 $effect 先于父组件 onMount(restoreView)执行导致的 4 视图不可达竞态。
+
+describe('restored 标志', () => {
+  beforeEach(() => resetStore());
+
+  test('初始值为 false(未恢复)', () => {
+    let value: boolean | undefined;
+    const unsub = restored.subscribe(v => { value = v; });
+    expect(value).toBe(false);
+    unsub();
+  });
+
+  test('restoreView 后置 true(解锁 +page.svelte 重定向)', () => {
+    let value: boolean | undefined;
+    const unsub = restored.subscribe(v => { value = v; });
+    expect(value).toBe(false);
+    restoreView();
+    expect(value).toBe(true);
+    unsub();
+  });
+
+  test('localStorage 有合法值时 restoreView 仍置 true', () => {
+    mockLocalStorage.setItem(STORAGE_KEY, 'audit');
+    let value: boolean | undefined;
+    const unsub = restored.subscribe(v => { value = v; });
+    restoreView();
+    expect(value).toBe(true);
+    unsub();
+  });
+
+  test('多次 restoreView 保持 true(幂等)', () => {
+    let value: boolean | undefined;
+    const unsub = restored.subscribe(v => { value = v; });
+    restoreView();
+    restoreView();
+    expect(value).toBe(true);
+    unsub();
   });
 });

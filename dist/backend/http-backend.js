@@ -97,9 +97,14 @@ export class HttpBackend {
             return false;
         }
     }
-    /** POST /api/sessions — 创建 session,返回新 SessionId */
+    /**
+     * POST /api/sessions — 创建 session,返回新 SessionId。
+     *
+     * C1 修复(2026-08-03):对齐 INTEGRATION_GUIDE §2.1,server 返回
+     *   { session_id: number, message: string },字段名是 session_id(不是 id)。
+     *   保留对裸数字 / {id} 的兜底以兼容其他实现。
+     */
     async createSession() {
-        // evorule-server 返回 { id: number } 或裸数字,两种都接受
         const r = await fetch(`${this.baseUrl}/api/sessions`, { method: 'POST' });
         if (!r.ok) {
             throw new HttpBackendError(`createSession failed: ${r.status}`, r.status, '/api/sessions');
@@ -107,8 +112,10 @@ export class HttpBackend {
         const j = await r.json().catch(() => null);
         if (typeof j === 'number')
             return j;
+        if (j && typeof j.session_id === 'number')
+            return j.session_id;
         if (j && typeof j.id === 'number')
-            return j.id;
+            return j.id; // 兜底
         throw new HttpBackendError(`createSession: unexpected response shape: ${JSON.stringify(j).slice(0, 200)}`, 200, '/api/sessions');
     }
     /** GET /api/sessions — 返回 SessionId 列表 */
@@ -188,7 +195,11 @@ export class HttpBackend {
     }
     /**
      * GET /api/sessions/{id}/facts?prefix=
-     * 对齐 ttd api.js facts(): 支持 prefix 过滤(按 type 前缀)。
+     * 对齐 ttd api.js facts(): 支持 prefix 过滤(按 path 前缀)。
+     *
+     * C4 修复(2026-08-03):对齐 server session_facts_by_prefix,返回 FactRecord[]
+     *   (元素字段为 fact_id / version / path / value),不是完整 Fact。
+     *   D-S3 后 server 已 filter 非 PayloadUpdate,不再有空对象。
      */
     async getFacts(id, prefix) {
         const q = prefix ? `?prefix=${encodeURIComponent(prefix)}` : '';
@@ -214,7 +225,12 @@ export class HttpBackend {
     async verifyAudit(id) {
         return this.fetchJson(`/api/sessions/${id}/audit/verify`);
     }
-    /** GET /api/sessions/{id}/audit/causal/{factId} — 因果链 */
+    /**
+     * GET /api/sessions/{id}/audit/causal/{factId} — 因果链。
+     * C3 修复(2026-08-03):chain 元素是审计条目 CausalEntry(fact_id / fact_type /
+     *   logical_time / cause / ...),不是完整 Fact(type / id),对齐 INTEGRATION_GUIDE §3.3。
+     *   server 返回 { session_id, fact_id, chain_length, chain: [...] },直接透传。
+     */
     async getCausalChain(id, factId) {
         return this.fetchJson(`/api/sessions/${id}/audit/causal/${factId}`);
     }
@@ -224,13 +240,29 @@ export class HttpBackend {
     /**
      * GET /api/sessions/{id}/rewind?version=
      * 对齐 ttd api.js 修复 1: path 用 query ?version=N,不是 /rewind/{v}。
+     *
+     * C6/D2-A 修复(2026-08-03):rewind 是历史快照,server 不返回 reactor(无历史运行态,
+     *   不编造)。返回类型从 SessionState 改为 HistoricalState(无 reactor)。
+     *   server rewind 返回 { payload, queue, actual_version }(actual_version 是实际回溯版本,
+     *   可能与请求 version 不同),这里映射为 HistoricalState.version。
      */
     async getStateAtVersion(id, version) {
-        return this.fetchJson(`/api/sessions/${id}/rewind?version=${version}`);
+        const raw = await this.fetchJson(`/api/sessions/${id}/rewind?version=${version}`);
+        const v = typeof raw.actual_version === 'number'
+            ? raw.actual_version
+            : typeof raw.version === 'number'
+                ? raw.version
+                : version;
+        return {
+            payload: raw.payload ?? {},
+            queue: Array.isArray(raw.queue) ? raw.queue : [],
+            version: v
+        };
     }
     /**
      * GET /api/sessions/{id}/diff?a=&b=
-     * 对齐 ttd api.js 修复 2: items 是数组格式 ["key", value] / ["key", old, new]
+     * 对齐 ttd api.js 修复 2: items 是数组格式 ["key", value] / ["key", old, new]。
+     * D1-B 修复(2026-08-03):server 同时返回 removed 字段(可选),DiffResult.removed 透传。
      */
     async getDiff(id, a, b) {
         return this.fetchJson(`/api/sessions/${id}/diff?a=${a}&b=${b}`);
@@ -241,6 +273,10 @@ export class HttpBackend {
     /**
      * POST /api/sessions/fork/{parentId}?version=
      * 对齐 ttd api.js fork(): 在指定 version 处分叉出新 session。
+     *
+     * C2 修复(2026-08-03):对齐 server 实现,返回
+     *   { session_id, parent_session_id, forked_from_version, message },
+     *   字段名是 session_id(不是 id)。保留裸数字 / {id} 兜底。
      */
     async forkSession(parentId, version) {
         const r = await fetch(`${this.baseUrl}/api/sessions/fork/${parentId}?version=${version}`, { method: 'POST' });
@@ -250,8 +286,10 @@ export class HttpBackend {
         const j = await r.json().catch(() => null);
         if (typeof j === 'number')
             return j;
+        if (j && typeof j.session_id === 'number')
+            return j.session_id;
         if (j && typeof j.id === 'number')
-            return j.id;
+            return j.id; // 兜底
         throw new HttpBackendError(`forkSession: unexpected response shape: ${JSON.stringify(j).slice(0, 200)}`, 200, `/api/sessions/fork/${parentId}`);
     }
 }

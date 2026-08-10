@@ -17,7 +17,7 @@ export declare const commandHistory: import("svelte/store").Writable<CommandHist
 export declare const isLoading: import("svelte/store").Writable<boolean>;
 export declare const lastError: import("svelte/store").Writable<string | null>;
 /** 当前 session state 的派生视图(只读) */
-export declare const reactorPhase: import("svelte/store").Readable<"idle" | "awaiting_io" | "stable" | "error" | null>;
+export declare const reactorPhase: import("svelte/store").Readable<"idle" | "draining" | "executing" | "awaiting_io" | "stable" | "error" | null>;
 export declare const reactorVersion: import("svelte/store").Readable<number | null>;
 export declare const reactorCausalDepth: import("svelte/store").Readable<number | null>;
 export declare const reactorPendingIO: import("svelte/store").Readable<number | null>;

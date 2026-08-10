@@ -62,15 +62,11 @@ export function injectBackend(backend: ExecutionBackend): void {
     return backend.getSessionState(id);
   };
 
-  // ttd diff 期望 { added, removed, changed, items? }; console 返回 DiffResult { items: [...] }
-  // 注意:ttd diff.js 内部对 server 模式和 client 模式分别处理,
-  //       server 模式直接读 result.added/removed/changed,
-  //       所以这里 console 需要返回包含这些字段的 shape。
-  //       但 evorule-server 的 /diff 端点本身返回 { added, removed, changed },
-  //       console 的 getDiff 类型签名是 DiffResult { items: Array },
-  //       实际运行时返回的完整对象会包含 added/removed/changed(items 是冗余 alias)。
-  //       这里透传 backend 返回,不做转换 — 若 HttpBackend 实际返回 { items } 只有 items,
-  //       ttd diff.js server 模式会读到 undefined,渲染为空(降级,但不崩)。
+  // ttd diff 期望 { items, removed, summary }(D1-B 修复后契约)。
+  // console HttpBackend.getDiff 返回 DiffResult { items, removed },与 ttd diff.js 对齐。
+  // ttd diff.js 的 renderServerDiff 从 items 中按元组长度分离 added(2元组)/changed(3元组),
+  // 并兜底兼容旧 added/changed 字段(过渡期不崩)。
+  // 这里透传 backend 返回,不做转换。
   ttdApi.diff = async (id: SessionId, a: number, b: number) => {
     return backend.getDiff(id, a, b) as unknown as Record<string, unknown>;
   };
@@ -90,7 +86,8 @@ export function injectBackend(backend: ExecutionBackend): void {
     return backend.verifyAudit(id);
   };
 
-  // ttd causal 期望 { chain: [...] }; console CausalChain { chain: Fact[] } 已对齐
+  // ttd causal 期望 { chain: CausalEntry[] }; console CausalChain { chain: CausalEntry[] } 已对齐
+  // (C3 修复,2026-08-03:chain 元素是 CausalEntry(fact_id/fact_type),不是 Fact(type/id))
   ttdApi.causal = async (id: SessionId, factId: number) => {
     return backend.getCausalChain(id, factId);
   };

@@ -137,18 +137,25 @@ export const DiffView = {
 };
 
 // === server 模式:扁平字段级 ===
-// result.added:    [[key, value], ...]
-// result.removed:  [[key, value], ...]
-// result.changed:  [[key, old, new], ...]
+// D1-B 修复(2026-08-03):server /diff 返回 { items, removed, summary }
+//   items 元素为元组:added → [key, value](2元组), changed → [key, old, new](3元组)
+//   removed 单独返回:[[key, value], ...]
+//   旧字段 added/changed 不再由 server 返回,从 items 中按元组长度分离。
 function renderServerDiff(d) {
   const wrap = h('div', {});
   if (d.summary) {
     wrap.appendChild(h('div', { class: 'tooltip', style: { marginBottom: '8px' } }, esc(d.summary)));
   }
 
-  const added = d.added || [];
-  const removed = d.removed || [];
-  const changed = d.changed || [];
+  // 兼容:优先用新契约 items;若旧后端仍返回 added/changed,也兜底(过渡期不崩)。
+  const items = Array.isArray(d.items) ? d.items : [];
+  const removed = Array.isArray(d.removed) ? d.removed : [];
+  const added = items.length > 0
+    ? items.filter((it) => Array.isArray(it) && it.length === 2)
+    : (Array.isArray(d.added) ? d.added : []);
+  const changed = items.length > 0
+    ? items.filter((it) => Array.isArray(it) && it.length === 3)
+    : (Array.isArray(d.changed) ? d.changed : []);
 
   if (added.length === 0 && removed.length === 0 && changed.length === 0) {
     wrap.appendChild(h('div', { class: 'empty' }, '两个版本完全相同(无字段级差异)'));

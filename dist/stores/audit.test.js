@@ -98,7 +98,8 @@ class MockBackend {
         return [];
     }
     async getStateAtVersion() {
-        return makeIdleState();
+        // D2-A:HistoricalState 无 reactor(历史快照不编造运行态)
+        return { payload: {}, queue: [], version: 0 };
     }
     async getDiff() {
         return { items: [] };
@@ -122,8 +123,8 @@ describe('audit store', () => {
         it('成功拉取应写入 auditData 并清空错误', async () => {
             backend.auditResponse = {
                 entries: [
-                    { type: 'instruction', id: 1, attr: '__exec__.payload.x' },
-                    { type: 'fact', id: 2, key: 'x', value: 42 }
+                    { fact_id: 1, fact_type: 'Command', logical_time: 1, cause: null },
+                    { fact_id: 2, fact_type: 'StateTransition', logical_time: 2, cause: 1 }
                 ],
                 fact_count: 2,
                 verified: true,
@@ -167,7 +168,7 @@ describe('audit store', () => {
         });
         it('verified=false(已断裂)的审计链也应原样展示', async () => {
             backend.auditResponse = {
-                entries: [{ type: 'fact', id: 1 }],
+                entries: [{ fact_id: 1, fact_type: 'Command', logical_time: 1, cause: null }],
                 fact_count: 1,
                 verified: false,
                 last_hash: 'broken'
@@ -229,8 +230,8 @@ describe('audit store', () => {
         it('成功拉取应写入 causalSelection(含 factId + chain)', async () => {
             backend.causalResponse = {
                 chain: [
-                    { type: 'instruction', id: 1, attr: '__exec__.payload.x' },
-                    { type: 'fact', id: 2, key: 'x', value: 42 }
+                    { fact_id: 1, fact_type: 'Command', logical_time: 1, cause: null },
+                    { fact_id: 2, fact_type: 'StateTransition', logical_time: 2, cause: 1 }
                 ]
             };
             const result = await store.fetchCausalChain(backend, 1, 5);
@@ -247,10 +248,10 @@ describe('audit store', () => {
             expect(get(store.causalSelection)?.chain).toEqual([]);
         });
         it('连续点击不同 fact,causalSelection 应替换为最新', async () => {
-            backend.causalResponse = { chain: [{ type: 'fact', id: 1 }] };
+            backend.causalResponse = { chain: [{ fact_id: 1, fact_type: 'Command', logical_time: 1, cause: null }] };
             await store.fetchCausalChain(backend, 1, 10);
             expect(get(store.causalSelection)?.factId).toBe(10);
-            backend.causalResponse = { chain: [{ type: 'fact', id: 1 }, { type: 'fact', id: 2 }] };
+            backend.causalResponse = { chain: [{ fact_id: 1, fact_type: 'Command', logical_time: 1, cause: null }, { fact_id: 2, fact_type: 'StateTransition', logical_time: 2, cause: 1 }] };
             await store.fetchCausalChain(backend, 1, 20);
             expect(get(store.causalSelection)?.factId).toBe(20);
             expect(get(store.causalSelection)?.chain).toHaveLength(2);
@@ -267,7 +268,7 @@ describe('audit store', () => {
         it('应清空 causalSelection 但不影响 auditData/verifyResult', async () => {
             backend.auditResponse = { entries: [], fact_count: 0, verified: true };
             backend.verifyResponse = { verified: true };
-            backend.causalResponse = { chain: [{ type: 'fact', id: 1 }] };
+            backend.causalResponse = { chain: [{ fact_id: 1, fact_type: 'Command', logical_time: 1, cause: null }] };
             await store.refreshAudit(backend, 1);
             await store.verifyAuditChain(backend, 1);
             await store.fetchCausalChain(backend, 1, 5);
@@ -284,13 +285,13 @@ describe('audit store', () => {
     describe('resetAuditStore', () => {
         it('应清空所有审计状态', async () => {
             backend.auditResponse = {
-                entries: [{ type: 'fact', id: 1 }],
+                entries: [{ fact_id: 1, fact_type: 'Command', logical_time: 1, cause: null }],
                 fact_count: 1,
                 verified: true,
                 last_hash: 'h1'
             };
             backend.verifyResponse = { verified: true };
-            backend.causalResponse = { chain: [{ type: 'fact', id: 1 }] };
+            backend.causalResponse = { chain: [{ fact_id: 1, fact_type: 'Command', logical_time: 1, cause: null }] };
             await store.refreshAudit(backend, 1);
             await store.verifyAuditChain(backend, 1);
             await store.fetchCausalChain(backend, 1, 1);

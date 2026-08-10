@@ -116,6 +116,13 @@ describe('HttpBackend', () => {
             expect(id).toBe(42);
             expect(mockFetch.calls[0].init?.method).toBe('POST');
         });
+        // C1 修复黄金样本(对齐 INTEGRATION_GUIDE §2.1):server 实际返回 { session_id, message }
+        it('POST /api/sessions 返回 { session_id } 时取 session_id(对齐 INTEGRATION_GUIDE)', async () => {
+            mockFetch.route('POST', /\/api\/sessions$/, () => jsonResponse({ session_id: 42, message: 'Session created' }));
+            const id = await backend.createSession();
+            expect(id).toBe(42);
+            expect(mockFetch.calls[0].init?.method).toBe('POST');
+        });
         it('返回裸数字时直接取值(兼容)', async () => {
             mockFetch.route('POST', /\/api\/sessions$/, () => jsonResponse(7));
             const id = await backend.createSession();
@@ -253,10 +260,20 @@ describe('HttpBackend', () => {
         });
     });
     describe('getFacts', () => {
-        it('无 prefix → /facts 不带 query', async () => {
-            mockFetch.route('GET', /\/api\/sessions\/1\/facts$/, () => jsonResponse([{ type: 'set', id: 0 }]));
+        // C4 修复黄金样本(对齐 server session_facts_by_prefix):
+        //   返回 FactRecord[](fact_id/version/path/value),不是 Fact[](type/id)
+        it('无 prefix → /facts 不带 query,返回 FactRecord[]', async () => {
+            const records = [
+                { fact_id: 1, version: 5, path: 'counter', value: 42 },
+                { fact_id: 2, version: 6, path: 'flag', value: true }
+            ];
+            mockFetch.route('GET', /\/api\/sessions\/1\/facts$/, () => jsonResponse(records));
             const r = await backend.getFacts(1);
-            expect(r).toHaveLength(1);
+            expect(r).toHaveLength(2);
+            // 验证 FactRecord 字段(不是 Fact 的 type/id)
+            expect(r[0].fact_id).toBe(1);
+            expect(r[0].path).toBe('counter');
+            expect(r[0].value).toBe(42);
             expect(mockFetch.calls[0].url).not.toContain('?');
         });
         it('带 prefix → /facts?prefix=set(encodeURIComponent)', async () => {
@@ -275,18 +292,30 @@ describe('HttpBackend', () => {
     // === 审计 ===
     // --------------------------------------------------------------------------
     describe('getAudit', () => {
-        it('GET /api/sessions/{id}/audit — fact_count + verified 字段(SPEC §1.1 修复 3)', async () => {
+        // C3 修复黄金样本(对齐 INTEGRATION_GUIDE §3.1):
+        //   entries 元素是 CausalEntry 格式(fact_id/fact_type/logical_time/...),不是 Fact(type/id)
+        it('GET /api/sessions/{id}/audit — fact_count + verified + entries(CausalEntry[])', async () => {
             const audit = {
-                entries: [{ type: 'set', id: 0 }],
-                fact_count: 1,
+                entries: [
+                    {
+                        fact_id: 30000,
+                        fact_type: 'Command',
+                        logical_time: 1,
+                        prev_hash: 'genesis',
+                        content_hash: 'e4d8ee2e'
+                    },
+                    { fact_id: 1, fact_type: 'StateTransition', logical_time: 2 }
+                ],
+                fact_count: 2,
                 verified: true,
                 last_hash: 'abc123'
             };
             mockFetch.route('GET', /\/api\/sessions\/1\/audit$/, () => jsonResponse(audit));
             const r = await backend.getAudit(1);
-            expect(r.fact_count).toBe(1);
+            expect(r.fact_count).toBe(2);
             expect(r.verified).toBe(true);
             expect(r.last_hash).toBe('abc123');
+            expect(r.entries).toHaveLength(2);
         });
     });
     describe('verifyAudit', () => {
@@ -299,16 +328,24 @@ describe('HttpBackend', () => {
         });
     });
     describe('getCausalChain', () => {
-        it('GET /api/sessions/{id}/audit/causal/{factId}', async () => {
+        // C3 修复黄金样本(对齐 INTEGRATION_GUIDE §3.3):
+        //   chain 元素是 CausalEntry(fact_id/fact_type/logical_time/cause),不是 Fact(type/id)
+        it('GET /api/sessions/{id}/audit/causal/{factId} — CausalEntry[] 格式', async () => {
             const chain = {
                 chain: [
-                    { type: 'set', id: 5 },
-                    { type: 'set', id: 3 }
+                    { fact_id: 10000, fact_type: 'IoResponse', logical_time: 4, cause: 2 },
+                    { fact_id: 2, fact_type: 'IoRequest', logical_time: 3, cause: 30000 },
+                    { fact_id: 30000, fact_type: 'Command', logical_time: 1, cause: null }
                 ]
             };
             mockFetch.route('GET', /\/api\/sessions\/1\/audit\/causal\/5$/, () => jsonResponse(chain));
             const r = await backend.getCausalChain(1, 5);
-            expect(r.chain).toHaveLength(2);
+            expect(r.chain).toHaveLength(3);
+            // 验证 CausalEntry 字段(不是 Fact 的 type/id)
+            expect(r.chain[0].fact_id).toBe(10000);
+            expect(r.chain[0].fact_type).toBe('IoResponse');
+            expect(r.chain[0].logical_time).toBe(4);
+            expect(r.chain[2].cause).toBeNull();
             expect(mockFetch.calls[0].url).toBe(`${baseUrl}/api/sessions/1/audit/causal/5`);
         });
     });
@@ -316,29 +353,42 @@ describe('HttpBackend', () => {
     // === 时间旅行 ===
     // --------------------------------------------------------------------------
     describe('getStateAtVersion', () => {
-        it('GET /api/sessions/{id}/rewind?version=N — 用 query(SPEC §1.3 修复 1)', async () => {
-            const state = {
-                payload: { x: 1 },
+        // D2-A 修复黄金样本(对齐 server rewind 响应):
+        //   server 返回 { payload, queue, actual_version }(无 reactor,历史快照诚实不编造运行态)
+        //   HttpBackend 映射为 HistoricalState { payload, queue, version }
+        it('GET /api/sessions/{id}/rewind?version=N — 用 query,返回 HistoricalState(无 reactor)', async () => {
+            // server rewind 实际响应格式(无 reactor)
+            const serverResponse = {
+                payload: { counter: 42 },
                 queue: [],
-                reactor: {
-                    phase: 'idle',
-                    causal_depth: 0,
-                    current_step: 0,
-                    pending_io_count: 0,
-                    structural_invariant_violations: 0
-                },
-                version: 3
+                actual_version: 3
             };
-            mockFetch.route('GET', /\/api\/sessions\/1\/rewind\?version=3$/, () => jsonResponse(state));
+            mockFetch.route('GET', /\/api\/sessions\/1\/rewind\?version=3$/, () => jsonResponse(serverResponse));
             const r = await backend.getStateAtVersion(1, 3);
-            expect(r.version).toBe(3);
+            // HistoricalState 字段(payload/queue/version,无 reactor)
+            expect(r.payload).toEqual({ counter: 42 });
+            expect(r.queue).toEqual([]);
+            expect(r.version).toBe(3); // actual_version → version 映射
+            // 关键:HistoricalState 无 reactor 字段(D2-A:历史快照不编造运行态)
+            expect('reactor' in r).toBe(false);
             // 关键:不是 /rewind/3 而是 /rewind?version=3
             expect(mockFetch.calls[0].url).toContain('/rewind?version=3');
             expect(mockFetch.calls[0].url).not.toMatch(/\/rewind\/3/);
         });
+        // 补充:actual_version 与请求 version 不同时,取 actual_version
+        it('actual_version 与请求 version 不同时,取 actual_version', async () => {
+            const serverResponse = {
+                payload: { x: 1 },
+                queue: [],
+                actual_version: 7 // 实际回溯到 v7(可能与请求的 5 不同)
+            };
+            mockFetch.route('GET', /\/api\/sessions\/1\/rewind\?version=5$/, () => jsonResponse(serverResponse));
+            const r = await backend.getStateAtVersion(1, 5);
+            expect(r.version).toBe(7); // 取 actual_version,不是请求的 5
+        });
     });
     describe('getDiff', () => {
-        it('GET /api/sessions/{id}/diff?a=&b=', async () => {
+        it('GET /api/sessions/{id}/diff?a=&b= — items 元组格式(added 2元组 + changed 3元组)', async () => {
             const diff = {
                 // items 是数组格式(SPEC §1.1 修复 2):变更 [key, value],改动 [key, old, new]
                 items: [
@@ -352,6 +402,25 @@ describe('HttpBackend', () => {
             expect(r.items[0]).toEqual(['foo', 1]);
             expect(r.items[1]).toEqual(['bar', 'old', 'new']);
         });
+        // D1-B 修复黄金样本(对齐 server /diff 响应):
+        //   server 返回 { items, removed, summary }
+        //   items:added(2元组)+ changed(3元组)混合;removed:独立数组
+        it('GET /api/sessions/{id}/diff?a=&b= — items + removed + summary 字段(D1-B)', async () => {
+            const diff = {
+                items: [
+                    ['counter', 1], // added(2元组)
+                    ['flag', false, true] // changed(3元组)
+                ],
+                removed: [['temp', 99]]
+            };
+            mockFetch.route('GET', /\/api\/sessions\/1\/diff\?a=2&b=5$/, () => jsonResponse({ ...diff, summary: '2 changes, 1 removed' }));
+            const r = await backend.getDiff(1, 2, 5);
+            expect(r.items).toHaveLength(2);
+            expect(r.items[0]).toEqual(['counter', 1]); // added
+            expect(r.items[1]).toEqual(['flag', false, true]); // changed
+            expect(r.removed).toHaveLength(1);
+            expect(r.removed?.[0]).toEqual(['temp', 99]);
+        });
     });
     // --------------------------------------------------------------------------
     // === What-If ===
@@ -363,6 +432,17 @@ describe('HttpBackend', () => {
             expect(newId).toBe(99);
             expect(mockFetch.calls[0].init?.method).toBe('POST');
             expect(mockFetch.calls[0].url).toBe(`${baseUrl}/api/sessions/fork/2?version=4`);
+        });
+        // C2 修复黄金样本(对齐 server fork 响应):server 返回 { session_id, ... }
+        it('POST /api/sessions/fork/{parentId}?version= — 返回 { session_id }(对齐 server)', async () => {
+            mockFetch.route('POST', /\/api\/sessions\/fork\/2\?version=4$/, () => jsonResponse({
+                session_id: 99,
+                parent_session_id: 2,
+                forked_from_version: 4,
+                message: 'Forked'
+            }));
+            const newId = await backend.forkSession(2, 4);
+            expect(newId).toBe(99);
         });
         it('返回裸数字时直接取(兼容)', async () => {
             mockFetch.route('POST', /\/api\/sessions\/fork\/2\?version=4$/, () => jsonResponse(33));

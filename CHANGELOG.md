@@ -1,118 +1,97 @@
-<!-- SPDX-License-Identifier: CC-BY-4.0 -->
-<!-- Copyright (C) 2026 EvoRule Project -->
+<!--
+  Copyright 2026 EvoRule Project
 
-# Changelog
+  SPDX-License-Identifier: AGPL-3.0-or-later
 
-本文件记录 evorule-console 的版本变更。
+  This file is part of EvoRule, licensed under the GNU Affero General
+  Public License v3.0 or later. See /LICENSE in the repository root or
+  <https://www.gnu.org/licenses/agpl-3.0.html>.
+-->
 
-格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/),遵循 [SemVer](https://semver.org/lang/zh-CN/)。
+# EvoRule Console 更新日志
 
-## [0.1.1] - 2026-08-03
+所有对 evorule-console 项目的重大更改都将记录在此文件中。
 
-### AssistantProvider 扩展槽 + dist/ 发布策略
+格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/) v1.0,
+本项目遵循 [语义化版本控制](https://semver.org/lang/zh-CN/) v2.0。
 
-v0.1.1 为大众版(`evorule-console-cloud`)开发铺路:在内核中预留 LLM 辅助扩展槽,并确立 `dist/` 强制提交的发版策略,使大众版能通过 git URL 直接安装内核而无需本地构建。
+徽章说明:
 
-> 内核本身依然「无 LLM、无联网」— 扩展槽默认 `null`,不引入任何 LLM 依赖。大众版注入实现后,视图的 LLM 按钮才渲染。
-
-### 新增
-
-- **`AssistantProvider` 接口**(`src/lib/assistant/types.ts`):单轮 LLM 辅助接口,3 方法
-  - `generateRuleDraft(nl)`:自然语言 → JSON 规则草案(用户审核后生效,不破坏「规则即数据」)
-  - `explainRule(rule)`:JSON 规则 → 自然语言说明(只读)
-  - `generateInput(desc)`:自然语言 → 测试输入 JSON(辅助填表)
-  - 硬约束(对齐 MASS_EDITION §2.4):不做多轮 agent 编排、不做 tool calling、不做自动执行、不改 fact log
-- **Svelte context 注入机制**(`src/lib/assistant/assistant-context.ts`):
-  - `provideAssistant(provider?)`:在根布局注入实现(默认 `null`)
-  - `useAssistantOrNull()`:视图按需取用,无注入则返回 `null`
-- **视图 LLM 按钮槽**(条件渲染,assistant 为 null 时不渲染):
-  - 规则库视图:`AI 辅助创建` / `解释规则` 两个按钮(经 `onaiGenerateDraft` / `onaiExplainRule` 回调)
-  - 执行台视图:`AI 生成输入` 按钮(经 `onaiGenerateInput` 回调)
-- **npm 包导出**:`src/lib/index.ts` 导出 `AssistantProvider` 类型 + `provideAssistant` / `useAssistantOrNull`,大众版可 `import { type AssistantProvider, provideAssistant } from '@evorule/console'`
-- **`dist/` 发布策略**(发版 SOP):`.gitignore` 仍忽略 `dist/`(开发期不污染 git),但发版时用 `git add -f dist/` 强制提交 prepack 产物,使大众版能 `npm install git+https://...evorule-console.git#v0.1.1` 直接安装,无需本地 `npm run prepack`
-
-### 变更
-
-- `package.json` `version`:`0.1.0` → `0.1.1`
-- `src/lib/index.ts` `CONSOLE_VERSION`:`'0.1.0'` → `'0.1.1'`
-- `README.md` 版本徽标:`0.1.0` → `0.1.1`
-
-### 测试
-
-| 测试            | 命令                              | 结果                          | 耗时   |
-| --------------- | --------------------------------- | ----------------------------- | ------ |
-| 单元测试(vitest) | `npm run test:unit`               | ✅ 9 files / 265 tests passed | 3.90s  |
-| 类型检查         | `npm run check`                   | ✅ 0 errors / 0 warnings      | ~5s    |
-| e2e(单 worker) | `npm run test`                    | ✅ 13/13 passed               | ~1.5m  |
-| npm 包           | `npm run prepack`                 | ✅ 产出 `dist/`              | —      |
-
-**回归验证**:AssistantProvider 改动不破坏 v0.1.0 既有行为 — 视图在未注入 provider 时,LLM 按钮不渲染,与 v0.1.0 视觉/行为完全一致(13 e2e 全过)。
-
-### 已知限制
-
-- v0.1.1 仍是开发期基线,不发布到 npm registry,仅作 git tag
-- `dist/` 强制提交只在发版 tag 时进行,日常 commit 仍按 `.gitignore` 忽略 `dist/`
-- 大众版注入的 LLM 实现需自行保证 API key 安全(不硬编码,经环境变量 / 用户输入)
-
-### 依赖
-
-无新增运行时依赖(扩展槽是纯接口,无 LLM SDK 引入)。
+- 🆕 新增
+- 🔄 变更
+- 🐛 修复
+- 🗑 弃用
+- ⚠️ Breaking Change
+- 🔒 安全
 
 ---
 
-## [0.1.0] - 2026-08-03
+## [0.2.0] - 2026-08-10
 
-### 首次发布
+**领域专家友好化 + 业务规则模型统一 + 编辑器重构 + 三份战略文档** — 本次 MINOR 升级聚焦"不懂 JSON 的领域专家"用户体验，统一 BusinessRule 共享模型，重构编辑器默认 form 模式，并落地产品战略/SDK 草案/金融示范三份设计文档。是 evorule-console 从"开发者工具"向"领域专家产品"转型的里程碑。
 
-evorule-console v0.1.0 — evorule 灵魂产品内核的首次公开发布。
+### ⚠️ Breaking Changes
 
-**定位**:无 LLM、无联网的完整规则引擎面板,展现 evorule「无智能,只有执行」的 7 大本质属性。
+- **编辑器默认模式 JSON → form**：`RuleEditor.svelte` 默认渲染业务化表单（form 模式），JSON 模式改为高级用户主动切换。领域专家看到的不再是裸 JSON，而是结构化表单。
+- **删除 `RuleEditor.svelte` 旧组件**：被新的 `RuleLibrary.svelte` + `BusinessRuleForm.svelte` 替代。外部代码若直接 import 旧组件会 break。
+- **onboarding 完全重写**：迁移到 BusinessRule 模型，删除 `block` 动作（与 evorule 核心 6 域类型对齐），引导流程从"填 JSON"改为"填表单"。
+- **gte/gt 域类型翻译**：evorule 核心仅支持 eq/lt/exists/instruction/all/not，server 端 `rule_translate.rs` 将 gte 翻译为 not(lt)、gt 翻译为 not(all([lt,eq]))，并实现对称回译。
 
-### 新增
+### 🆕 新增
 
-- **5 视图**:规则库 / 执行台 / 状态 / 审计 / 时间旅行,每视图对应 ≥1 个 evorule 本质属性
-- **执行后端抽象**:`ExecutionBackend` 接口(15 方法),evorule-console 用 `HttpBackend` 实现,大众版/高级版可替换为远程 / 嵌入式实现
-- **L_console 预校验**:`RuleValidator` 在前端做 G1-G7 格式校验,对齐核心仓 TCB 约束(T1/T2/D2),核心仓 `build.rs` + clippy + Kani 是 L0 权威最终拦截器
-- **ttd 整体嵌入**:时间旅行调试器 v1.0 源码整体复制进 `src/lib/ttd/`(性能优先,非 iframe / 非接口引用),仅 3 处最小适配
-- **双形态**:`@evorule/console` 既是 SvelteKit 应用(可直接运行),又是 npm 包(可被大众版/高级版 `npm install` 复用)
-- **双许可(4 文件结构,与 evorule 核心仓对齐)**:LICENSE(AGPL-3.0 全文)+ DUAL_LICENSE.md(双许可说明)+ COMMERCIAL_LICENSE.md(商业许可摘要)+ FREE_COMMERCIAL_LICENSE.md(免费豁免流程)
-- **治理文件套件(与 evorule 核心仓治理层对齐)**:AUTHORS.md / CODE_OF_CONDUCT.md / TRADEMARK.md / CLA-individual.md / NOTICE.md / SECURITY.md / CONTRIBUTING.md — 治理/法律/社区/品牌层与核心仓一致;技术层(GATE_REFERENCE / VERSION_STRATEGY / DOCS_INDEX)不照搬,避免误导用户以为 console 也过 Kani 形式化验证
-- **设计令牌系统**:CSS 变量 + 设计令牌,无 UI 框架依赖
-- **示例规则**:3 个内置示例(set_basic / branch_vip / io_two_phase),全部通过 L_console G1-G7 校验
+- **BusinessRule 共享模型**（`src/lib/views/business-rule-model.ts`）：统一业务层规则抽象，桥接领域专家语义与 evorule 核心 6 域类型。支持自定义字段扩展点（`CUSTOM_FIELDS_WORKSPACE_*`），为医疗/法律/物流等领域预留接口。
+- **Workspace 后端层**（`src/lib/backend/http-workspace-backend.ts` + `workspace-types.ts` + `workspace-context.ts`）：完整的工作区 API 抽象，支持规则 CRUD、版本管理、审计链拉取。
+- **Workspace 路由**（`src/routes/workspace/`）：`/workspace/[id]` + `/workspace/editor/[id]` 路由，编辑器直接导航 + 按 ID 拉取规则元数据。
+- **Onboarding 路由**（`src/routes/onboarding/`）：5 步建库向导（选模板 → 命名 → 加规则 → 试运行 → 完成）。
+- **FactStream 组件**（`src/lib/views/StateView/FactStream.svelte`）：Fact 流时间线，每行 = 逻辑版本号 + 故事线（中文派生）+ VerdictBadge。
+- **Workspace/Verdict stores**（`src/lib/stores/workspace.ts` + `verdict.ts`）：工作区状态管理 + 裁决状态派生。
+- **组件库目录**（`src/lib/components/`）：可复用 UI 组件抽离。
+- **字体资源**（`src/lib/assets/fonts/`）：产品字体本地化。
+- **三份战略设计文档**（`设计文档/`，gitignore 私有）：
+  - `11_产品战略备忘录_v1.0.md`：定位/目标用户/LLM 角色/许可证矩阵/SDK 分级/先通用后垂直路径
+  - `12_SDK_API草案_v1.0.md`：完整版 + 云端简化版 SDK 设计，对齐 AGPL 双轨许可
+  - `13_金融咨询Agent示范规格_v1.0.md`：金融领域垂直示范，复用 100% 通用层能力
+- **Playwright 自动化脚本**（`src/routes/workspace/editor/__tests__/9.3-unsupported-readonly.spec.ts`）：验证 9 个 unsupported 规则表单控件的 disabled 状态。
+- **V1 浏览器手动测试检查表**（`设计文档/10_V1浏览器手动测试检查表.md`）：9 个控件 disabled 状态 + 暗色模式 + 编辑器导航等手动测试项。
 
-### 测试
+### 🔄 变更
 
-| 测试            | 命令                              | 结果                          | 耗时   |
-| --------------- | --------------------------------- | ----------------------------- | ------ |
-| 单元测试(vitest) | `npm run test:unit`               | ✅ 9 files / 265 tests passed | 2.55s  |
-| 类型检查         | `npm run check`                   | ✅ 0 errors / 0 warnings      | ~5s    |
-| 构建             | `npm run build`                   | ✅ exit=0(adapter-static)    | 9.65s  |
-| e2e(单 worker) | `npm run test`                    | ✅ 13/13 passed               | 27.9s  |
-| npm 包           | `npm run prepack`                 | ✅ 产出 `dist/`              | —      |
+- **ExecutionPad 暗色模式重构**：修复"大片白色背景下的黑色块居中"刺眼问题，统一使用设计令牌（design tokens）。
+- **StateView/JsonNode/JsonTree 暗色模式**：统一设计令牌，移除硬编码颜色。
+- **TimeTravel 琥珀主题**：Fact opacity 0.7 + 横幅 + 时间旅行视觉优化。
+- **app.css 旧令牌清理**：删除向后兼容别名块，移除冗余 CSS。
+- **RuleValidator G5 白名单**：新增 `__exec__.result.*` 路径前缀，支持执行结果引用。
+- **HTTP backend 适配**：`submitCommand` 适配 evorule-server 实际响应格式，`listRules` 兼容 `Vec` 和 `{versions:[]}` 两种响应形态。
 
-**集成验证**:大众版 demo 仓通过 `npm install ../evorule-console-0.1.0.tgz` 安装后,`import { useBackendOrNull, RuleValidator, VIEW_LIST } from '@evorule/console'` 可用。
+### 🐛 修复
 
-### 已知限制
+- **编辑器直接导航显示"未找到规则"**：子组件 onMount 先于父组件执行，`currentWorkspaceId` 未水合，`$rules` 为空。新增 `ensureRule` 按 ID 拉取规则元数据；编辑器 onMount 订阅 `currentWorkspaceId`，等待工作区可用后加载规则。
+- **编辑器点击规则库规则跳转后一直显示加载中**：store 订阅时同步执行回调，unsub 在赋值前被调用（TDZ 陷阱）。修复：去掉回调内的 `unsub()`，在 onMount 清理函数中调用，使用 done 标志防重复触发。
+- **动作角色（role）丢失**：server 端 `translate_to_transform` 未正确处理 `action_set` 中的 value 字段。修复 server 端 `rule_translate.rs` 中 `action_set` 处理逻辑，确保 value 字段正确包含 role 信息。
+- **G5 校验失败（路径引用错误）**：`__exec__.result.notify` 不在 G5 白名单。修复：在 server `rule_translate.rs` 和 console `ruleValidator.ts` 的 G5 白名单中添加 `__exec__.result.` 前缀。
+- **params.path vs params.attr bug**：server `translate_to_transform` 生成 `params.path`，而 evorule core `exec_set` 读取 `params.attr`。修复：将 `rule_translate.rs` 中的 `params.path` 改为 `params.attr`。
+- **CORS 跨域错误**：console（localhost:5173）与 server（127.0.0.1:18080）跨域。修复：server 启动时添加 `--allowed-origins http://localhost:5173`。
+- **server 启动失败（拒绝绑定非 loopback 地址）**：server 安全策略要求非 loopback 地址必须设置认证 token。修复：启动时指定 `--addr 127.0.0.1:18080` 绑定 loopback 地址。
+- **onboarding 创建的规则 G4 校验失败（含 gte）**：gte 直接作为域类型，evorule 核心仅支持 eq/lt/exists/instruction/all/not。修复：server 端 `rule_translate.rs` 将 gte 翻译为 not(lt)，gt 翻译为 not(all([lt,eq]))，并实现对称回译。
 
-- 执行台 / 状态 / 审计 / 时间旅行视图需要 evorule-server 跑在 `127.0.0.1:18080`(规则库视图可离线试用)
-- e2e 测试需单 worker(`workers: 1`),多 worker 触发 Vite dev server 冷启动竞态(配置问题,非代码缺陷)
-- v0.1.0 暂不发布到 npm registry,仅作为 git tag 基线;大众版开发时用 `npm install git+https://gitee.com/evo-rule-lab/evorule-console.git#v0.1.0` 形式依赖,等 v0.2.0 稳定后再正式发 npm
+### 🔒 安全
 
-### 依赖
-
-- SvelteKit 5 + Svelte 5(runes 模式)
-- TypeScript(strict)
-- Vite 5 + adapter-static
-- vitest + playwright
+- **License 矩阵对齐**：evorule-console 与 evorule 核心保持 AGPL-3.0-or-later 双轨许可一致。SDK 从 MIT 修正为 AGPL（SDK 是核心衍生作品，协议不能自相矛盾）。
 
 ---
 
-## 版本号约定
+## [0.1.1] - 2026-07-XX
 
-- evorule-console 遵循独立 semver,与大众版 / 高级版版本松绑(`^x.x`)
-- 大众版 / 高级版通过 `npm install @evorule/console@^0.1.0` 依赖,不绑定版本号
-- breaking change 会递增主版本号,并在本文件显著标注
+详见 git tag v0.1.1。
 
 ---
 
-_本仓 changelog 只记录 evorule-console 自身版本。大众版 / 高级版各自独立 semver,见各自仓库。_
+## [0.1.0] - 2026-07-XX
+
+evorule-console 首次公开发布。SvelteKit 应用 + npm 包双形态，无 LLM、无联网的完整规则引擎面板。
+
+---
+
+**作者**: EvoRule Project
+**邮箱**: <evorulelab@gmail.com>
+**Gitee**: <https://gitee.com/evo-rule-lab/evorule-console>

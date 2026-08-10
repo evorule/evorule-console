@@ -10,4 +10,5 @@
 // 端点对齐来源:
 //   - time-travel-debugger/src/core/api.js (v1.0,49/51 PASS)
 //   - src/lib/api/evorule-server.js (旧只读 client)
+//   - evorule-server 自带 INTEGRATION_GUIDE.md(权威 API 规范,2026-08-03 起对齐)
 export {};

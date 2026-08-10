@@ -31,7 +31,7 @@
 	} from '../../stores/audit';
 	import { currentSessionId } from '../../stores/session';
 	import { useBackendOrNull } from '../../backend/backend-context';
-	import type { Fact } from '../../backend/types';
+	import type { CausalEntry } from '../../backend/types';
 	import JsonTree from '../StateView/JsonTree.svelte';
 
 	const backend = useBackendOrNull();
@@ -65,16 +65,19 @@
 		await verifyAuditChain(backend, sid);
 	}
 
-	/** 点击一条 fact:
+	/** 点击一条 audit entry(因果摘要):
 	 *  - 第一次点击:展开详情 + 拉取因果链
-	 *  - 第二次点击同一 fact:收起详情 + 关闭因果
+	 *  - 第二次点击同一 entry:收起详情 + 关闭因果
+	 *
+	 * C3 修复(2026-08-03):audit entries 是 CausalEntry 格式(fact_id/fact_type),
+	 *   不是 Fact(type/id)。fetchCausalChain 需要 fact_id。
 	 */
-	async function handleFactClick(fact: Fact) {
+	async function handleFactClick(entry: CausalEntry) {
 		if (!backend) return;
 		const sid = $currentSessionId;
 		if (sid === null) return;
 
-		if (expandedFactId === fact.id) {
+		if (expandedFactId === entry.fact_id) {
 			// 收起
 			expandedFactId = null;
 			selectedFactId = null;
@@ -82,9 +85,9 @@
 			return;
 		}
 
-		expandedFactId = fact.id;
-		selectedFactId = fact.id;
-		await fetchCausalChain(backend, sid, fact.id);
+		expandedFactId = entry.fact_id;
+		selectedFactId = entry.fact_id;
+		await fetchCausalChain(backend, sid, entry.fact_id);
 	}
 
 	function handleCloseCausal() {
@@ -100,29 +103,33 @@
 		return `${hash.slice(0, 8)}…${hash.slice(-6)}`;
 	}
 
-	/** 提取 fact 的简短描述(不同 type 取不同字段) */
-	function factSummary(fact: Fact): string {
-		switch (fact.type) {
-			case 'instruction':
-				return `instruction#${fact.id}`;
-			case 'fact':
-				return `fact#${fact.id}`;
-			case 'state':
-				return `state#${fact.id}`;
-			case 'transition':
-				return `transition#${fact.id}`;
-			default:
-				return `${fact.type}#${fact.id}`;
-		}
+	/** fact_type 简写(对齐 ttd causal.js 的 typeShort 逻辑,便于列宽控制) */
+	function typeShort(t: string): string {
+		return t
+			.replace('StateTransition', 'ST')
+			.replace('PayloadUpdate', 'PU')
+			.replace('IoRequest', 'IO-Req')
+			.replace('IoResponse', 'IO-Resp')
+			.replace('Command', 'Cmd');
 	}
 
-	/** 把 entries(unknown[]) 当作 Fact[] 处理(契约里 entries 是 unknown[],
-	 *  但实际 evorule-server 返回的都是带 type/id 的对象) */
-	function asFacts(entries: unknown[]): Fact[] {
-		return entries.filter((e): e is Fact => {
+	/** 提取 entry 的简短描述(基于 fact_type + logical_time)。
+	 * C3 修复(2026-08-03):CausalEntry 无 type/id,改用 fact_type/logical_time 生成摘要。
+	 */
+	function entrySummary(entry: CausalEntry): string {
+		const lt = entry.logical_time;
+		return lt != null ? `${typeShort(entry.fact_type)} · t${lt}` : typeShort(entry.fact_type);
+	}
+
+	/** 把 entries(unknown[]) 当作 CausalEntry[] 处理。
+	 * C3 修复(2026-08-03):audit 端点返回的 entries 是 CausalEntry 格式(fact_id/fact_type),
+	 *   不是 Fact(type/id)。按 fact_id(number)+ fact_type(string)过滤。
+	 */
+	function asCausalEntries(entries: unknown[]): CausalEntry[] {
+		return entries.filter((e): e is CausalEntry => {
 			if (!e || typeof e !== 'object') return false;
-			const f = e as Record<string, unknown>;
-			return typeof f.type === 'string' && typeof f.id === 'number';
+			const c = e as Record<string, unknown>;
+			return typeof c.fact_id === 'number' && typeof c.fact_type === 'string';
 		});
 	}
 </script>
@@ -171,7 +178,7 @@
 		</div>
 	{:else}
 		{@const audit = $auditData}
-		{@const facts = asFacts(audit.entries)}
+		{@const facts = asCausalEntries(audit.entries)}
 
 		<section class="audit-summary">
 			<div class="summary-item">
@@ -225,29 +232,29 @@
 					<div class="empty-mini">审计链为空(提交命令后此处理论会有 fact)</div>
 				{:else}
 					<ul class="fact-list">
-						{#each facts as fact (fact.id)}
+						{#each facts as fact (fact.fact_id)}
 							<li>
 								<button
 									class="fact-item"
-									class:selected={selectedFactId === fact.id}
+									class:selected={selectedFactId === fact.fact_id}
 									onclick={() => handleFactClick(fact)}
 								>
 									<div class="fact-row">
-										<span class="fact-id mono">#{fact.id}</span>
-										<span class="fact-type">{fact.type}</span>
-										<span class="fact-summary">{factSummary(fact)}</span>
-										{#if expandedFactId === fact.id}
+										<span class="fact-id mono">#{fact.fact_id}</span>
+										<span class="fact-type">{fact.fact_type}</span>
+										<span class="fact-summary">{entrySummary(fact)}</span>
+										{#if expandedFactId === fact.fact_id}
 											<span class="fact-arrow">▾</span>
 										{:else}
 											<span class="fact-arrow">▸</span>
 										{/if}
 									</div>
 								</button>
-								{#if expandedFactId === fact.id}
+								{#if expandedFactId === fact.fact_id}
 									<div class="fact-detail">
-										<div class="detail-label">fact JSON</div>
+										<div class="detail-label">entry JSON</div>
 										<div class="detail-tree">
-											<JsonTree data={fact} rootLabel="fact" />
+											<JsonTree data={fact} rootLabel="entry" />
 										</div>
 									</div>
 								{/if}
@@ -274,11 +281,11 @@
 						<div class="empty-mini">无前因(可能是根 fact)</div>
 					{:else}
 						<ol class="causal-list">
-							{#each $causalSelection.chain as cf (cf.id)}
+							{#each $causalSelection.chain as cf (cf.fact_id)}
 								<li class="causal-item">
-									<span class="fact-id mono">#{cf.id}</span>
-									<span class="fact-type">{cf.type}</span>
-									<span class="fact-summary">{factSummary(cf)}</span>
+									<span class="fact-id mono">#{cf.fact_id}</span>
+									<span class="fact-type">{cf.fact_type}</span>
+									<span class="fact-summary">{entrySummary(cf)}</span>
 								</li>
 							{/each}
 						</ol>

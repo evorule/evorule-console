@@ -1,4 +1,4 @@
-import type { ExecutionBackend, SessionId, SessionAudit, VerifyResult, Fact, CausalChain } from '../backend/types';
+import type { ExecutionBackend, SessionId, SessionAudit, VerifyResult, CausalEntry, CausalChain } from '../backend/types';
 /** 当前 session 的审计链快照(从 backend.getAudit 拉取) */
 export declare const auditData: import("svelte/store").Writable<SessionAudit | null>;
 /** verifyAudit 的结果(从 backend.verifyAudit 拉取,null 表示未验证) */
@@ -6,12 +6,15 @@ export declare const verifyResult: import("svelte/store").Writable<VerifyResult 
 /**
  * 当前展示的因果链(从 backend.getCausalChain 拉取)。
  * null 表示未选中任何 fact 的因果。
+ *
+ * C3 修复(2026-08-03):chain 元素是 CausalEntry(fact_id/fact_type/logical_time/...),
+ *   不是完整 Fact(type/id)。audit 端点的 entries 与 causal 端点的 chain 同为 CausalEntry 格式。
  */
 export interface CausalSelection {
     /** 触发查询的 fact id */
     factId: number;
     /** 因果链(可能为空数组,表示该 fact 无前因) */
-    chain: Fact[];
+    chain: CausalEntry[];
 }
 export declare const causalSelection: import("svelte/store").Writable<CausalSelection | null>;
 /** 审计 loading(audit/verify/causal 任一在进行) */

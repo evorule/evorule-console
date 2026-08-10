@@ -1,9 +1,9 @@
-export type { SessionId, ReactorState, SessionState, SessionAudit, VerifyResult, Fact, DiffResult, CausalChain, CommandResult, ExecutionBackend } from './backend/types';
+export type { SessionId, ReactorState, SessionState, HistoricalState, SessionAudit, VerifyResult, Fact, FactRecord, DiffResult, CausalChain, CausalEntry, CommandResult, ExecutionBackend } from './backend/types';
 export { HttpBackend } from './backend/http-backend';
 export { provideBackend, useBackend, useBackendOrNull } from './backend/backend-context';
 export type { AssistantProvider } from './assistant/types';
 export { provideAssistant, useAssistantOrNull } from './assistant/assistant-context';
-export { rules, selectedRuleId, selectedRule, selectRule, addRule, updateRule, deleteRule } from './stores/rules';
+export { rules, selectedRuleId, selectedRule, selectRule, getAllRules, getSelectedRuleId, addRule, updateRule, duplicateRule, deleteRule, importRule, exportRule } from './stores/rules';
 export type { Rule } from './stores/rules';
 export { sessions, currentSessionId, sessionState, commandHistory, isLoading, lastError, reactorVersion, refreshSessions, createSession, selectSession, submitCommand } from './stores/session';
 export type { CommandHistoryEntry } from './stores/session';

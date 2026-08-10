@@ -19,7 +19,7 @@ export { provideAssistant, useAssistantOrNull } from './assistant/assistant-cont
 // ============================================================================
 // 3. 状态 stores(跨视图共享)
 // ============================================================================
-export { rules, selectedRuleId, selectedRule, selectRule, addRule, updateRule, deleteRule } from './stores/rules';
+export { rules, selectedRuleId, selectedRule, selectRule, getAllRules, getSelectedRuleId, addRule, updateRule, duplicateRule, deleteRule, importRule, exportRule } from './stores/rules';
 export { sessions, currentSessionId, sessionState, commandHistory, isLoading, lastError, reactorVersion, refreshSessions, createSession, selectSession, submitCommand } from './stores/session';
 export { auditData, verifyResult, causalSelection, auditLoading, auditError, refreshAudit, verifyAuditChain, fetchCausalChain, clearCausalSelection, resetAuditStore } from './stores/audit';
 export { currentView, setView, restoreView, getViewMeta, VIEW_LIST } from './stores/view';

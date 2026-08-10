@@ -21,14 +21,37 @@
     setView,
     restoreView,
     VIEW_LIST,
+    type ViewId,
   } from "$lib/stores/view";
+  import { goto } from "$app/navigation";
   import { provideBackend } from "$lib/backend/backend-context";
+  import { provideWorkspaceBackend } from "$lib/backend/workspace-context";
+  import { refreshWorkspaces } from "$lib/stores/workspace";
 
   let { children } = $props();
+
+  /**
+   * nav tab 点击:切换 currentView + 导航到对应路由。
+   * - rules → /workspace(规则库独立路由)
+   * - 其余 4 视图(execution/state/audit/timetravel)→ /(由 +page.svelte 按 currentView 渲染)
+   *
+   * 必须显式导航:这 4 个视图只在 / 路由的 +page.svelte 内渲染。若仅 setView 不导航,
+   * 在 /workspace(或 /onboarding 等非 / 路由)点击非 rules tab 时只改 currentView,
+   * 停在当前路由,对应视图不渲染(用户感知为"点击没反应")。
+   * rules tab 显式 goto('/workspace') 同理覆盖 /onboarding 等路由(原仅靠 +page.svelte
+   * 的 $effect 重定向,但该 $effect 仅在 / 路由挂载时运行)。
+   */
+  function handleNavClick(viewId: ViewId) {
+    setView(viewId);
+    goto(viewId === "rules" ? "/workspace" : "/");
+  }
 
   // 注入 backend — 必须在组件初始化时调用(setContext 要求),不能放 onMount
   // HttpBackend 默认指向 127.0.0.1:18080(evorule-server)
   const backend = provideBackend();
+  // 注入 WorkspaceBackend(阶段 C.1) — 与 ExecutionBackend 并列,消费 server workspace 域端点
+  // (规则/沙盒/发布/判定/转译/旁路)。loopback 免认证。副作用:setContext 供子组件 useWorkspaceBackend() 取用。
+  const wsBackend = provideWorkspaceBackend();
 
   // 连接状态:null=检测中, true=已连接, false=未连接
   let connected = $state<boolean | null>(null);
@@ -62,6 +85,12 @@
         connected = false;
       });
 
+    // === workspace 水合(布局级,所有路由共享)==
+    // 从 localStorage 恢复上次选中的 workspace,使直接访问 /workspace/sandbox/[id]
+    // /workspace/editor/[id] /onboarding 等路由也能拿到 currentWorkspaceId。
+    // /workspace/+page.svelte 不再重复调用。
+    refreshWorkspaces(wsBackend);
+
     return () => unsubTheme();
   });
 </script>
@@ -78,7 +107,7 @@
         <button
           class="nav-tab"
           class:active={$currentView === view.id}
-          onclick={() => setView(view.id)}
+          onclick={() => handleNavClick(view.id)}
           title={view.essence}
           aria-pressed={$currentView === view.id}
         >
@@ -125,18 +154,19 @@
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    background: var(--color-gray-50);
+    background: var(--bg-primary);
   }
 
-  /* === 顶部导航栏 === */
+  /* === 顶部导航栏 (B.3: 新令牌, 1px 硬边框, 无阴影, 56px) === */
   .topbar {
     display: flex;
     align-items: center;
     gap: var(--spacing-lg);
     padding: 0 var(--spacing-xl);
-    background: var(--color-gray-900);
-    color: #fff;
-    box-shadow: var(--shadow-md);
+    min-height: var(--topbar-height);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border);
     position: sticky;
     top: 0;
     z-index: 10;
@@ -151,12 +181,13 @@
   }
   .brand-name {
     font-size: var(--text-lg);
-    font-weight: 600;
+    font-weight: var(--font-semibold);
     letter-spacing: 0.02em;
+    color: var(--text-primary);
   }
   .brand-tag {
     font-size: var(--text-xs);
-    color: var(--color-gray-400);
+    color: var(--text-secondary);
     margin-top: 2px;
   }
 
@@ -173,30 +204,31 @@
     gap: var(--spacing-xs);
     padding: var(--spacing-sm) var(--spacing-md);
     background: transparent;
-    color: var(--color-gray-300);
+    color: var(--text-secondary);
     border: none;
     border-bottom: 2px solid transparent;
     border-radius: 0;
     cursor: pointer;
     font-size: var(--text-sm);
+    font-weight: var(--font-medium);
     transition:
       color var(--transition-fast),
-      border-color var(--transition-fast);
+      border-color var(--transition-fast),
+      background var(--transition-fast);
   }
   .nav-tab:hover {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-primary);
+    background: var(--bg-hover);
   }
   .nav-tab.active {
-    color: #fff;
-    border-bottom-color: var(--color-primary);
-    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-primary);
+    border-bottom-color: var(--brand);
   }
   .tab-icon {
     font-size: var(--text-base);
   }
   .tab-label {
-    font-weight: 500;
+    font-weight: var(--font-medium);
   }
 
   /* === 右侧操作区 === */
@@ -211,28 +243,32 @@
     align-items: center;
     gap: var(--spacing-xs);
     font-size: var(--text-xs);
-    color: var(--color-gray-400);
+    color: var(--text-secondary);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-card);
   }
   .conn-dot {
     width: 8px;
     height: 8px;
     border-radius: var(--radius-full);
-    background: var(--color-gray-500);
+    background: var(--text-secondary);
   }
   .conn-badge.online .conn-dot {
-    background: var(--color-success);
+    background: var(--success);
   }
   .conn-badge.online .conn-text {
-    color: var(--color-success);
+    color: var(--success);
   }
   .conn-badge.offline .conn-dot {
-    background: var(--color-error);
+    background: var(--danger);
   }
   .conn-badge.offline .conn-text {
-    color: var(--color-error);
+    color: var(--danger);
   }
   .conn-badge.checking .conn-dot {
-    background: var(--color-warning);
+    background: var(--warning);
     animation: pulse 1.2s ease-in-out infinite;
   }
   @keyframes pulse {
@@ -247,17 +283,18 @@
 
   .theme-toggle {
     background: transparent;
-    color: var(--color-gray-300);
-    border: 1px solid var(--color-gray-700);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
     border-radius: var(--radius-md);
     padding: var(--spacing-xs) var(--spacing-sm);
     cursor: pointer;
     font-size: var(--text-base);
     line-height: 1;
+    transition: background var(--transition-fast), color var(--transition-fast);
   }
   .theme-toggle:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: #fff;
+    background: var(--bg-hover);
+    color: var(--text-primary);
   }
 
   /* === 主内容区 === */

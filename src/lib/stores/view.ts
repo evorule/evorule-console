@@ -57,6 +57,20 @@ export function getViewMeta(id: ViewId): ViewMeta {
  */
 export const currentView = writable<ViewId>(DEFAULT_VIEW);
 
+/**
+ * 视图恢复完成标志 — 用于修复 +page.svelte 的 $effect 与 +layout.svelte 的 onMount 竞态。
+ *
+ * 问题:Svelte 5 中子组件 +page.svelte 的 $effect(检测 currentView==='rules' → goto /workspace)
+ * 先于父组件 +layout.svelte 的 onMount(调用 restoreView 恢复真实视图)执行,
+ * 导致全量加载到 / 时总是用默认值 'rules' 重定向,state/audit/timetravel/execution
+ * 4 个分析视图无法通过直接导航到达(阶段 C.3.2 引入的回归)。
+ *
+ * 修复:+page.svelte 的 $effect 等待 restored=true 后再判断是否重定向。
+ * restoreView() 末尾置 true。SSR 时 localStorage 不可用 → 提前返回,标志保持 false
+ * (仅客户端 onMount 会真正恢复并置 true)。
+ */
+export const restored = writable<boolean>(false);
+
 /** 切换视图 + 持久化 */
 export function setView(view: ViewId): void {
   currentView.set(view);
@@ -68,6 +82,8 @@ export function setView(view: ViewId): void {
 /**
  * 从 localStorage 恢复上次视图(在 +layout.svelte onMount 中调用)。
  * 非法值(旧版本残留/手改)回退到默认视图。
+ *
+ * 恢复完成后置 restored=true,解锁 +page.svelte 的重定向 $effect。
  */
 export function restoreView(): void {
   if (typeof localStorage === 'undefined') return;
@@ -78,4 +94,6 @@ export function restoreView(): void {
     // 非法值清理
     localStorage.removeItem(STORAGE_KEY);
   }
+  // 解锁 +page.svelte 的重定向 $effect(避免与默认值 'rules' 竞态)
+  restored.set(true);
 }

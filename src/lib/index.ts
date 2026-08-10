@@ -21,11 +21,14 @@ export type {
   SessionId,
   ReactorState,
   SessionState,
+  HistoricalState,
   SessionAudit,
   VerifyResult,
   Fact,
+  FactRecord,
   DiffResult,
   CausalChain,
+  CausalEntry,
   CommandResult,
   ExecutionBackend
 } from './backend/types';
@@ -36,6 +39,63 @@ export {
   useBackend,
   useBackendOrNull
 } from './backend/backend-context';
+
+// ============================================================================
+// 1.B Workspace 后端抽象(阶段 C.1)— 与 ExecutionBackend 并列
+// ============================================================================
+export type {
+  WorkspaceBackend,
+  WorkspaceRecord,
+  WorkspaceMemberRecord,
+  RuleRecord,
+  RuleVersionRecord,
+  SessionRecord,
+  RuleSessionBinding,
+  SandboxSession,
+  TestDatasetRecord,
+  PublishQueueItem,
+  ProductionStateRecord,
+  ProductionAuditRecord,
+  VerdictContractRecord,
+  VersionClockMapRecord,
+  // RuleState 改从 stores/rules 导出(对前端而言 rules store 是更常用的消费入口)
+  WorkspaceState,
+  RuleVersionState,
+  SessionBindingState,
+  SandboxStatus,
+  PublishStatus,
+  MemberRole,
+  CreateWorkspaceRequest,
+  UpdateWorkspaceRequest,
+  AddMemberRequest,
+  CreateRuleRequest,
+  UpdateRuleContentRequest,
+  CreateSessionRequest,
+  StartSandboxRequest,
+  StartSandboxResponse,
+  CreateTestDatasetRequest,
+  SubmitPublishRequest,
+  ReviewPublishRequest,
+  RollbackRequest,
+  // ValidationError / ValidationResult 改从 validators/ruleValidator 导出
+  // (ruleValidator 是 console 侧权威定义,workspace-types 仅作 server 契约镜像)
+  TranslateToTransformRequest,
+  TranslateToTransformResponse,
+  TranslateToConditionalRequest,
+  TranslateToConditionalResponse,
+  CreateVerdictContractRequest,
+  UpdateVerdictContractRequest,
+  EvaluateVerdictRequest,
+  EvaluateVerdictResult,
+  RecordClockRequest
+} from './backend/workspace-types';
+
+export { HttpWorkspaceBackend, HttpWorkspaceBackendError } from './backend/http-workspace-backend';
+export {
+  provideWorkspaceBackend,
+  useWorkspaceBackend,
+  useWorkspaceBackendOrNull
+} from './backend/workspace-context';
 
 // ============================================================================
 // 2. AssistantProvider 扩展槽(v0.1.1)— LLM 辅助接口,默认 null
@@ -49,21 +109,91 @@ export { provideAssistant, useAssistantOrNull } from './assistant/assistant-cont
 // ============================================================================
 // 3. 状态 stores(跨视图共享)
 // ============================================================================
-export { rules, selectedRuleId, selectedRule, selectRule, addRule, updateRule, deleteRule } from './stores/rules';
-export type { Rule } from './stores/rules';
 
+// --- rules store (阶段 C.2.3 重构:localStorage → WorkspaceBackend) ---
+export {
+  rules,
+  selectedRuleId,
+  selectedRule,
+  migrationNeeded,
+  isOffline,
+  lastError as rulesError,
+  refreshRules,
+  selectRule,
+  selectRuleLocal,
+  loadRuleContent,
+  addRule,
+  updateRule,
+  duplicateRule,
+  deleteRule,
+  importRule,
+  exportRule,
+  checkMigrationNeeded,
+  migrateLegacyRules,
+  getAllRules,
+  getSelectedRuleId,
+  isRuleReadonly,
+  resetRulesStore
+} from './stores/rules';
+export type { Rule, RuleState } from './stores/rules';
+// 注:RuleState 同时存在于 workspace-types,但前端消费入口以 stores/rules 为准
+
+// --- workspace store (阶段 C.2.1 新增) ---
+export {
+  workspaces,
+  currentWorkspace,
+  currentWorkspaceId,
+  workspaceSessions,
+  workspaceSandboxes,
+  publishQueue,
+  productionState,
+  isLoading as isWorkspaceLoading,
+  lastError as workspaceError,
+  refreshWorkspaces,
+  ensureDefaultWorkspace,
+  seedBuiltinRules,
+  selectWorkspace,
+  refreshPublishQueue,
+  refreshProductionState,
+  refreshSandboxes,
+  resetWorkspaceStore
+} from './stores/workspace';
+
+// --- verdict store (阶段 C.2.2 新增) ---
+export {
+  verdictContracts,
+  currentVerdictContract,
+  lastEvaluateResult,
+  isLoading as isVerdictLoading,
+  lastError as verdictError,
+  refreshVerdictContracts,
+  evaluateVerdict,
+  createVerdictContract,
+  resetVerdictStore
+} from './stores/verdict';
+
+// --- session store (阶段 C.2.4 改造:createWorkspaceSession + SSE 留桩) ---
 export {
   sessions,
   currentSessionId,
+  currentWorkspaceSession,
   sessionState,
   commandHistory,
-  isLoading,
-  lastError,
+  isLoading as isSessionLoading,
+  lastError as sessionError,
+  reactorPhase,
   reactorVersion,
+  reactorCausalDepth,
+  reactorPendingIO,
   refreshSessions,
   createSession,
+  createWorkspaceSession,
+  closeSession,
   selectSession,
-  submitCommand
+  refreshSessionState,
+  submitCommand,
+  subscribeSessionSwitched,
+  resetSessionStore
 } from './stores/session';
 export type { CommandHistoryEntry } from './stores/session';
 
@@ -100,6 +230,11 @@ export { default as AuditView } from './views/AuditView/AuditView.svelte';
 export { default as TimeTravelView } from './views/TimeTravel/TimeTravel.svelte';
 
 // ============================================================================
+// 4.B 通用组件 (阶段 D.3.1)
+// ============================================================================
+export { default as VerdictBadge } from './components/VerdictBadge.svelte';
+
+// ============================================================================
 // 5. L_console 预校验(G1-G7,与核心仓 TCB 对齐)
 // ============================================================================
 export { RuleValidator } from './validators/ruleValidator';
@@ -108,4 +243,4 @@ export type { ValidationError, ValidationResult } from './validators/ruleValidat
 // ============================================================================
 // 6. 版本信息
 // ============================================================================
-export const CONSOLE_VERSION = '0.1.1';
+export const CONSOLE_VERSION = '0.2.0';

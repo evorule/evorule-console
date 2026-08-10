@@ -7,7 +7,10 @@
 //   - VERSION_SELECT: 防抖加载该 version 的 payload(rewind API)
 //   - 用 json-viewer 渲染 payload(可折叠树)
 //
-// rewind 响应: {session_id, target_version, payload, queue, actual_version}
+// rewind 响应(console-adapter 注入 backend.getStateAtVersion):
+//   HistoricalState { payload, queue, version }
+//   其中 version 已由 console HttpBackend 映射自 server 的 actual_version。
+//   兼容:若直接调 server(未注入 backend),响应含 actual_version,也兜底读取。
 
 import { api } from '../core/api.js';
 import { store } from '../core/store.js';
@@ -40,7 +43,9 @@ export const StateView = {
     try {
       const data = await api.rewind(id, version);
       const payload = data.payload ?? data;
-      const actualV = data.actual_version ?? version;
+      // D2-A 修复(2026-08-03):HistoricalState.version 已映射 actual_version;
+      //   兼容直接调 server 的场景(actual_version 字段)。
+      const actualV = data.version ?? data.actual_version ?? version;
       store.setView('state', { version: actualV, payload });
       this.render();
     } catch (e) {

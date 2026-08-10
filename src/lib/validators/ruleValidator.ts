@@ -247,6 +247,13 @@ export class RuleValidator {
 
   /**
    * G5: 检查路径引用格式
+   *
+   * 白名单 (与 server rule_translate.rs check_path_references 对齐):
+   *   - __exec__.payload.*     输入数据
+   *   - __exec__.instruction.* 当前指令参数
+   *   - __exec__.queue         队列引用
+   *   - __exec__.result.*      规则输出标记 (业务动作 notify/approve/flag)
+   *   - __io_result__          IO 结果
    */
   private static checkPathReferences(value: any, errors: ValidationError[]): void {
     const checkPaths = (obj: any, path: string): void => {
@@ -256,13 +263,14 @@ export class RuleValidator {
         const val = obj[key];
         if (typeof val === 'string' && val.startsWith('__')) {
           // 检查 __ 前缀的路径格式
-          if (!val.startsWith('__exec__.payload.') && 
+          if (!val.startsWith('__exec__.payload.') &&
               !val.startsWith('__exec__.instruction.') &&
               !val.startsWith('__exec__.queue') &&
+              !val.startsWith('__exec__.result.') &&
               val !== '__io_result__') {
             errors.push({
               gate: 'G5',
-              message: `无效的路径引用格式: ${val}，必须以 __exec__.payload. 或 __exec__.instruction. 开头`,
+              message: `无效的路径引用格式: ${val}，必须以 __exec__.payload. / __exec__.instruction. / __exec__.result. 开头`,
               path: `${path}.${key}`
             });
           }

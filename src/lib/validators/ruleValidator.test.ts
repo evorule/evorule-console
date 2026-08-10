@@ -318,6 +318,8 @@ describe('RuleValidator - L_console 预校验', () => {
         '__exec__.payload.test',
         '__exec__.instruction.params.prompt',
         '__exec__.queue[0]',
+        '__exec__.result.notify',
+        '__exec__.result.approve',
         '__io_result__'
       ];
       

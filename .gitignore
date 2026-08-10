@@ -11,3 +11,12 @@ e2e-runs.log
 !.env.example
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# === 2026-08-10 v0.2.0 发布前盘点 ===
+# IDE/Agent 临时文件
+.trae/
+
+# 仓内私有设计文档（不公开发布，对齐 evorule 仓策略）
+设计文档/
+**/设计文档/
+**/设计文档/**
