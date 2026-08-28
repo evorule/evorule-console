@@ -26,6 +26,15 @@
 
 ---
 
+## [Unreleased]
+
+### 🆕 新增
+
+- **操作者身份注入（ActorIdentity）**：`HttpWorkspaceBackend` 构造函数新增可选第三参 `actor?: ActorIdentity`（`{ name, role? }`，从 `workspace-types` 导出）。传入后，沙盒编排（`started_by`/`closed_by`/`?requester=`）与发布链路（`submitted_by`/`reviewed_by`/`operated_by` + `role`）携带真实操作者，server 审计链归属不再失真（上游债务 D2）。
+- **审计归属 fail-fast**：`actor` 已配置但缺 `role` 时，发布侧三方法（`submitPublish`/`reviewPublish`/`emergencyRollback`）如实抛错并附修复指引；`actor` 整体未配置时回落历史内置值 `console` 并每实例 `console.warn` 一次（dev/演示路径兼容）。
+
+---
+
 ## [0.2.0] - 2026-08-10
 
 **领域专家友好化 + 业务规则模型统一 + 编辑器重构 + 三份战略文档** — 本次 MINOR 升级聚焦"不懂 JSON 的领域专家"用户体验，统一 BusinessRule 共享模型，重构编辑器默认 form 模式，并落地产品战略/SDK 草案/金融示范三份设计文档。是 evorule-console 从"开发者工具"向"领域专家产品"转型的里程碑。

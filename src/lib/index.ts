@@ -65,6 +65,8 @@ export type {
   SandboxStatus,
   PublishStatus,
   MemberRole,
+  PublishRole,
+  ActorIdentity,
   CreateWorkspaceRequest,
   UpdateWorkspaceRequest,
   AddMemberRequest,
