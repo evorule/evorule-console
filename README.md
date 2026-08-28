@@ -123,6 +123,11 @@ npm run prepack     # svelte-package:产出 dist/(npm 包形态)
 
 - **执行后端抽象**:`ExecutionBackend` 接口(15 方法),evorule-console 用 `HttpBackend`(调 evorule-server);
   高级版替换为 `EmbeddedBackend`(Tauri + Rust),不联网 — 边界清晰,切换只改 root 一处。
+- **操作者身份(ActorIdentity)**:`HttpWorkspaceBackend` 构造可选传入 `{ name, role? }`,
+  发布链路(submitted_by/reviewed_by/operated_by + role)与沙盒编排(started_by/closed_by/?requester=)
+  携带真实操作者;未传入时回落 `"console"` 并 warn 一次 — 该回落仅适用于本仓独立运行的 dev/演示形态,
+  消费方(大众版等)生产环境必须传入登录用户,否则 server 审计归属失真。
+  stores 层的 `created_by/updated_by = 'console'` 是本地/离线演示数据归属,不进 server 审计链,不属于此范畴。
 - **L_console 预校验**:`validators/ruleValidator.ts` 在前端做 G1-G7 格式校验(对齐核心仓 TCB 约束),
   核心仓 `build.rs` + clippy + Kani 是 L0 权威最终拦截器(见 `validators/GATE_ALIGNMENT.md`)。
 - **ttd 整体直接复制**:时间旅行调试器源码整体复制进 `src/lib/ttd/`(性能优先,无 iframe/接口引用开销),
