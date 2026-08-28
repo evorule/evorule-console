@@ -631,6 +631,54 @@ describe('HttpBackend', () => {
       expect(mockFetch.calls[0].url).toBe('http://127.0.0.1:18080/api/health');
     });
   });
+
+  // --------------------------------------------------------------------------
+  // === Bearer 认证(模式对齐 HttpWorkspaceBackend) ===
+  // --------------------------------------------------------------------------
+
+  describe('Bearer 认证', () => {
+    it('构造传入 token:GET 请求带 Authorization 头', async () => {
+      mockFetch.route('GET', /\/api\/sessions$/, () => jsonResponse({ sessions: [] }));
+      const b = new HttpBackend(baseUrl, 'tok-123');
+      await b.listSessions();
+      expect(mockFetch.calls[0].init?.headers).toMatchObject({
+        Authorization: 'Bearer tok-123'
+      });
+    });
+
+    it('构造传入 token:POST 请求 Authorization 与 Content-Type 并存', async () => {
+      mockFetch.route('POST', /\/api\/sessions\/1\/command$/, () =>
+        jsonResponse({ accepted: true })
+      );
+      const b = new HttpBackend(baseUrl, 'tok-123');
+      await b.submitCommand(1, { type: 'set' });
+      expect(mockFetch.calls[0].init?.headers).toMatchObject({
+        Authorization: 'Bearer tok-123',
+        'Content-Type': 'application/json'
+      });
+    });
+
+    it('构造传入 token:health 与直连 fetch 端点同样携带(createSession)', async () => {
+      mockFetch.route('GET', /\/api\/health$/, () => jsonResponse({}));
+      mockFetch.route('POST', /\/api\/sessions$/, () => jsonResponse({ session_id: 1 }));
+      const b = new HttpBackend(baseUrl, 'tok-123');
+      await b.health();
+      await b.createSession();
+      expect(mockFetch.calls[0].init?.headers).toMatchObject({
+        Authorization: 'Bearer tok-123'
+      });
+      expect(mockFetch.calls[1].init?.headers).toMatchObject({
+        Authorization: 'Bearer tok-123'
+      });
+    });
+
+    it('未传 token(默认):请求不带 Authorization 头(免认证 server 可用)', async () => {
+      mockFetch.route('GET', /\/api\/sessions$/, () => jsonResponse({ sessions: [] }));
+      await backend.listSessions();
+      const h = mockFetch.calls[0].init?.headers as Record<string, string> | undefined;
+      expect(h?.['Authorization']).toBeUndefined();
+    });
+  });
 });
 
 // ============================================================================
