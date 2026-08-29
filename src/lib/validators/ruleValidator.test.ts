@@ -131,6 +131,49 @@ describe('RuleValidator - L_console 预校验', () => {
         ]
       });
       expect(RuleValidator.validate(ioRequestJson).valid).toBe(true);
+
+      // 测试 collect 类型（C10: 白名单 4→6; 递归只走 branch.on_true/on_false, each 内指令层不误判）
+      const collectJson = JSON.stringify({
+        transform: [
+          {
+            type: 'collect',
+            params: {
+              from: '__exec__.payload.llm_response.tool_calls',
+              each: { type: 'call_service', params: { service_name: '{{name}}' } }
+            }
+          },
+          {
+            type: 'branch',
+            params: {
+              domain: { type: 'all', domains: [] },
+              on_true: []
+            }
+          }
+        ]
+      });
+      expect(RuleValidator.validate(collectJson).valid).toBe(true);
+
+      // 测试 merge 类型（ReAct 循环收口: messages + tool_result + next_instruction）
+      const mergeJson = JSON.stringify({
+        transform: [
+          {
+            type: 'merge',
+            params: {
+              messages: '__exec__.payload.llm_response.messages',
+              tool_result: '__exec__.payload.tool_result',
+              next_instruction: { type: 'call_service', params: { service_name: 'advisor' } }
+            }
+          },
+          {
+            type: 'branch',
+            params: {
+              domain: { type: 'all', domains: [] },
+              on_true: []
+            }
+          }
+        ]
+      });
+      expect(RuleValidator.validate(mergeJson).valid).toBe(true);
     });
 
     it('应该递归检查子指令的元指令类型', () => {

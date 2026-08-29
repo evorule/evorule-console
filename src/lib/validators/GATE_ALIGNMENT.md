@@ -40,7 +40,7 @@ evorule-console 是 TypeScript 前端视图层,不是 TCB。它**不复制**核�
 | L_console | 检查内容 | 对齐 L0 约束 | L0 SPEC 章节 | L0 实施机制 |
 |---|---|---|---|---|
 | **G1** | JSON 格式合法性 | (前置条件) | — | L0-runtime executor 解析时拦截 |
-| **G2** | 元指令类型(set/push/branch/io_request) | **T1** 指令集有限性(3 真元指令 + 0.5 signal) | TCB_SPEC.md §一 | L0-runtime InstructionExecutor 枚举变体 |
+| **G2** | 元指令类型(set/push/branch/io_request/collect/merge) | **T1** 6 元指令枚举(_shared/v1.0.json transform_rule, 权威源 L0-runtime InstructionExecutor dispatch) | _shared/v1.0.json + TCB_SPEC.md §一 | L0-runtime InstructionExecutor 枚举变体 |
 | **G3** | I/O 双路径模式(io_request 必须在 exists(__io_result__) 分支内) | D7(数据流约束,io_request 双路径) | TCB_SPEC.md §四 | L0-runtime executor + reactor IO 状态机 |
 | **G4** | 域类型(eq/lt/exists/instruction/all/not) | **T2** 域类型有限性(6 种) | TCB_SPEC.md §一 | L0-runtime Domain enum 变体 |
 | **G5** | 路径引用格式(__exec__.payload.*) | D9(路径解析永不 panic,返回 Option/Result) | TCB_SPEC.md §四 | L0-runtime path.rs |
