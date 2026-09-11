@@ -245,4 +245,4 @@ export type { ValidationError, ValidationResult } from './validators/ruleValidat
 // ============================================================================
 // 6. 版本信息
 // ============================================================================
-export const CONSOLE_VERSION = '0.2.0';
+export const CONSOLE_VERSION = '0.3.0';

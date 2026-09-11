@@ -5,7 +5,7 @@
 // 依据: docs/SPEC.md §1.3, §5
 // 端点对齐:
 //   - time-travel-debugger/src/core/api.js (v1.0,49/51 PASS)
-//   - src/lib/api/evorule-server.js (旧只读 client,本文件是它的 TS 全功能超集)
+//   (旧 src/lib/api/evorule-server.js 只读 client 已于阶段 C.1 删除;本文件是其 TS 全功能超集)
 //
 // 设计说明:
 //   - HttpBackend 是"开发期 / 大众版"实现,不是 evorule-console 边界的一部分
@@ -36,17 +36,28 @@ export class HttpBackendError extends Error {
  * 用法:
  *   const backend = new HttpBackend();           // 默认 127.0.0.1:18080
  *   const backend = new HttpBackend('http://localhost:9000');
+ *   const backend = new HttpBackend('http://localhost:9000', 'token'); // Bearer 认证
  *   const ok = await backend.health();
  */
 export class HttpBackend {
     baseUrl;
-    constructor(baseUrl = DEFAULT_BASE_URL) {
+    authToken;
+    constructor(baseUrl = DEFAULT_BASE_URL, authToken = null) {
         // 去掉末尾斜杠,避免 path 拼接出现 //
         this.baseUrl = baseUrl.replace(/\/+$/, '');
+        this.authToken = authToken;
     }
     // ------------------------------------------------------------------------
     // 内部工具
     // ------------------------------------------------------------------------
+    /** 构造请求头(含可选 Bearer token;模式对齐 HttpWorkspaceBackend.headers) */
+    headers(extra) {
+        const h = { ...extra };
+        if (this.authToken) {
+            h['Authorization'] = `Bearer ${this.authToken}`;
+        }
+        return h;
+    }
     /**
      * 统一 fetch + JSON 解析 + 错误处理。
      * 对齐 ttd api.js fetchJson 的行为,但返回类型化结果。
@@ -58,7 +69,10 @@ export class HttpBackend {
         const url = this.baseUrl + path;
         let r;
         try {
-            r = await fetch(url, opts);
+            r = await fetch(url, {
+                ...opts,
+                headers: this.headers(opts.headers)
+            });
         }
         catch (e) {
             // fetch 抛出 TypeError 通常是网络问题(连接拒绝 / DNS 失败 / CORS)
@@ -90,7 +104,7 @@ export class HttpBackend {
     /** GET /api/health — 只检查 HTTP 状态,不解析 body(兼容纯文本响应) */
     async health() {
         try {
-            const r = await fetch(`${this.baseUrl}/api/health`);
+            const r = await fetch(`${this.baseUrl}/api/health`, { headers: this.headers() });
             return r.ok;
         }
         catch {
@@ -105,7 +119,10 @@ export class HttpBackend {
      *   保留对裸数字 / {id} 的兜底以兼容其他实现。
      */
     async createSession() {
-        const r = await fetch(`${this.baseUrl}/api/sessions`, { method: 'POST' });
+        const r = await fetch(`${this.baseUrl}/api/sessions`, {
+            method: 'POST',
+            headers: this.headers()
+        });
         if (!r.ok) {
             throw new HttpBackendError(`createSession failed: ${r.status}`, r.status, '/api/sessions');
         }
@@ -279,7 +296,7 @@ export class HttpBackend {
      *   字段名是 session_id(不是 id)。保留裸数字 / {id} 兜底。
      */
     async forkSession(parentId, version) {
-        const r = await fetch(`${this.baseUrl}/api/sessions/fork/${parentId}?version=${version}`, { method: 'POST' });
+        const r = await fetch(`${this.baseUrl}/api/sessions/fork/${parentId}?version=${version}`, { method: 'POST', headers: this.headers() });
         if (!r.ok) {
             throw new HttpBackendError(`forkSession failed: ${r.status}`, r.status, `/api/sessions/fork/${parentId}`);
         }

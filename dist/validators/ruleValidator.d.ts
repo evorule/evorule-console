@@ -17,7 +17,7 @@
  *
  * 检查项(7 条,与核心仓 SPEC 的对齐见每条 G 注释):
  * G1: JSON 格式合法性
- * G2: 元指令类型合法性(set, push, branch, io_request)        → 对齐 TCB_SPEC.md T1 (3+0.5 元指令有限性)
+ * G2: 元指令类型合法性(set, push, branch, io_request, collect, merge) → 对齐 _shared/v1.0.json transform_rule (6 元指令, 权威源 tcb executor dispatch)
  * G3: I/O 双路径模式(io_request 必须在 exists(__io_result__) 分支内)
  * G4: 域类型合法性(eq, lt, exists, instruction, all, not)     → 对齐 TCB_SPEC.md T2 (6 域类型有限性)
  * G5: 路径引用格式(__ 前缀必须符合 __exec__.payload.xxx)
@@ -45,8 +45,8 @@ export declare class RuleValidator {
      */
     static validate(json: string): ValidationResult;
     /**
-     * G2: 检查元指令类型(set / push / branch / io_request)
-     * 对齐: TCB_SPEC.md §一 T1 (3 真元指令 + 0.5 signal 元指令, 指令集有限性 = 确定性来源)
+     * G2: 检查元指令类型(set / push / branch / io_request / collect / merge)
+     * 对齐: _shared/v1.0.json transform_rule 6 元指令枚举(权威源 tcb executor dispatch)
      */
     private static checkMetaInstruction;
     /**
@@ -61,6 +61,13 @@ export declare class RuleValidator {
     private static checkDomainTypes;
     /**
      * G5: 检查路径引用格式
+     *
+     * 白名单 (与 server rule_translate.rs check_path_references 对齐):
+     *   - __exec__.payload.*     输入数据
+     *   - __exec__.instruction.* 当前指令参数
+     *   - __exec__.queue         队列引用
+     *   - __exec__.result.*      规则输出标记 (业务动作 notify/approve/flag)
+     *   - __io_result__          IO 结果
      */
     private static checkPathReferences;
     /**

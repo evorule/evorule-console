@@ -7,35 +7,36 @@
 /* === Reset + base === */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --bg: #0d1117; --bg-soft: #161b22; --bg-soft-2: #21262d;
-  --border: #30363d; --text: #c9d1d9; --text-dim: #8b949e;
-  --accent: #58a6ff; --green: #3fb950; --orange: #d29922; --red: #f85149; --purple: #a371f7;
+  /* 界面升级 v1.0 阶段 B.2: 对齐 §B.1 深色驾驶舱令牌(消除 GitHub-dark 独立配色) */
+  --bg: #0B0D10; --bg-soft: #1A1D23; --bg-soft-2: #232830;
+  --border: #2A2F36; --text: #E8EDF2; --text-dim: #6B7280;
+  --accent: #4A9EFF; --green: #00D4AA; --orange: #FFA500; --red: #FF4D4F; --purple: #a78bfa;
 }
 html, body { height: 100%; overflow: hidden; }
 body {
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   font-size: 14px; line-height: 1.5;
   background: var(--bg); color: var(--text);
 }
 button {
   font-family: inherit; font-size: 13px;
   background: var(--bg-soft-2); color: var(--text);
-  border: 1px solid var(--border); border-radius: 6px;
+  border: 1px solid var(--border); border-radius: 4px;
   padding: 5px 12px; cursor: pointer;
 }
 button:hover { background: var(--border); }
-button.primary { background: #238636; border-color: #2ea043; color: #fff; }
-button.primary:hover { background: #2ea043; }
-button.danger { background: #6e2a2a; border-color: var(--red); }
+button.primary { background: var(--green); border-color: var(--green); color: #06231a; }
+button.primary:hover { background: color-mix(in srgb, var(--green) 88%, #000); }
+button.danger { background: color-mix(in srgb, var(--red) 20%, var(--bg-soft-2)); border-color: var(--red); color: var(--red); }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
 input, select, textarea {
   font-family: inherit; font-size: 13px;
   background: var(--bg-soft-2); color: var(--text);
-  border: 1px solid var(--border); border-radius: 6px;
+  border: 1px solid var(--border); border-radius: 4px;
   padding: 5px 8px;
 }
-textarea { font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace; }
-pre, code { font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace; }
+textarea { font-family: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace; }
+pre, code { font-family: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace; }
 pre { white-space: pre-wrap; word-break: break-all; }
 
 /* === Layout === */

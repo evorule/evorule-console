@@ -5,7 +5,7 @@
 
 > evorule 规则引擎面板 — **无智能,只有执行** 的响应式规则引擎前端
 
-[![version](https://img.shields.io/badge/version-0.1.1-blue)](./CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-0.3.0-blue)](./CHANGELOG.md)
 [![license](https://img.shields.io/badge/license-AGPL--3.0--or--later%20%2B%20Commercial-success)](./DUAL_LICENSE.md)
 [![svelte](https://img.shields.io/badge/svelte-5-ff3e00)](https://svelte.dev)
 [![check](https://img.shields.io/badge/svelte--check-0%20errors-brightgreen)](#验证)

@@ -87,7 +87,7 @@
 
   .tree-children {
     padding-left: var(--spacing-md);
-    border-left: 1px dashed var(--color-gray-200);
+    border-left: 1px dashed var(--border);
     margin-left: 4px;
   }
 
@@ -99,42 +99,42 @@
   }
 
   .tree-key {
-    color: var(--color-primary);
-    font-weight: 500;
+    color: var(--brand);
+    font-weight: var(--font-medium);
   }
 
   .type-tag {
     font-size: 10px;
-    color: var(--color-gray-500);
-    background: var(--color-gray-100);
+    color: var(--text-secondary);
+    background: var(--bg-hover);
     padding: 1px 5px;
     border-radius: var(--radius-sm);
   }
 
   .count {
-    color: var(--color-gray-500);
+    color: var(--text-secondary);
     font-size: var(--text-xs);
   }
 
   .primitive {
-    color: var(--color-gray-900);
+    color: var(--text-primary);
   }
 
   .val-string {
-    color: #065f46;
+    color: var(--success);
   }
 
   .val-number {
-    color: #1e40af;
+    color: var(--brand);
   }
 
   .val-boolean {
-    color: #7c2d12;
-    font-weight: 600;
+    color: var(--warning);
+    font-weight: var(--font-semibold);
   }
 
   .val-null {
-    color: var(--color-gray-500);
+    color: var(--text-secondary);
     font-style: italic;
   }
 </style>

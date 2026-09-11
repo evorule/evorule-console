@@ -14,11 +14,15 @@ export declare class HttpBackendError extends Error {
  * 用法:
  *   const backend = new HttpBackend();           // 默认 127.0.0.1:18080
  *   const backend = new HttpBackend('http://localhost:9000');
+ *   const backend = new HttpBackend('http://localhost:9000', 'token'); // Bearer 认证
  *   const ok = await backend.health();
  */
 export declare class HttpBackend implements ExecutionBackend {
     private readonly baseUrl;
-    constructor(baseUrl?: string);
+    private readonly authToken;
+    constructor(baseUrl?: string, authToken?: string | null);
+    /** 构造请求头(含可选 Bearer token;模式对齐 HttpWorkspaceBackend.headers) */
+    private headers;
     /**
      * 统一 fetch + JSON 解析 + 错误处理。
      * 对齐 ttd api.js fetchJson 的行为,但返回类型化结果。

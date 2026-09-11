@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 EvoRule Project
-// evorule-console 规则库 — 内置示例规则
+// evorule-console 规则库 — 内置示例规则(种子数据)
 //
 // 设计:全部 PASS ruleValidator.ts G1-G7 预校验(对齐核心仓 T1/T2/D2)
 // 用途:展示"规则即数据" — 业务专家可直接读懂、修改、扩展
@@ -13,6 +13,12 @@
 //
 // 元指令(set/push/branch/io_request)对齐 TCB_SPEC.md T1
 // 域类型(eq/lt/exists/instruction/all/not)对齐 TCB_SPEC.md T2
+//
+// 阶段 C.2.3 重构说明:
+//   - 旧版导出 `Rule[]`(含 source/createdAt/updatedAt/版本号 等运行时字段)
+//   - 新版仅作为"种子数据源":只保留 name/description/content
+//   - 实际写入默认 workspace 的逻辑移至 workspace.ts seedBuiltinRules
+//   - server createRule 会赋予真实 id(ULID)/created_at/metadata 等
 /**
  * 3 个示例规则,从简到繁展示 evorule 规则即数据的特性。
  *
@@ -22,10 +28,8 @@
  */
 export const BUILTIN_RULES = [
     {
-        id: 'example.set_basic',
-        version: 1,
+        name: 'example.set_basic',
         description: '最简 set 示例 — 设置 payload.x = 1,展示元指令 set 的用法',
-        source: 'builtin',
         content: JSON.stringify({
             id: 'example.set_basic',
             version: 1,
@@ -47,15 +51,11 @@ export const BUILTIN_RULES = [
                     }
                 }
             ]
-        }, null, 2),
-        createdAt: '2026-08-02T00:00:00.000Z',
-        updatedAt: '2026-08-02T00:00:00.000Z'
+        }, null, 2)
     },
     {
-        id: 'example.branch_vip',
-        version: 1,
+        name: 'example.branch_vip',
         description: 'VIP 客户打 9 折,非 VIP 不打折 — 展示 branch + exists 域用法',
-        source: 'builtin',
         content: JSON.stringify({
             id: 'example.branch_vip',
             version: 1,
@@ -98,15 +98,11 @@ export const BUILTIN_RULES = [
                     }
                 }
             ]
-        }, null, 2),
-        createdAt: '2026-08-02T00:00:00.000Z',
-        updatedAt: '2026-08-02T00:00:00.000Z'
+        }, null, 2)
     },
     {
-        id: 'example.io_two_phase',
-        version: 1,
+        name: 'example.io_two_phase',
         description: 'IO 双路径示例 — 检查 __io_result__ 后分支发不同通知',
-        source: 'builtin',
         content: JSON.stringify({
             id: 'example.io_two_phase',
             version: 1,
@@ -147,8 +143,6 @@ export const BUILTIN_RULES = [
                     }
                 }
             ]
-        }, null, 2),
-        createdAt: '2026-08-02T00:00:00.000Z',
-        updatedAt: '2026-08-02T00:00:00.000Z'
+        }, null, 2)
     }
 ];

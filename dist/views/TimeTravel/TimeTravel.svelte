@@ -23,6 +23,8 @@
   import { currentSessionId } from "../../stores/session";
   import { useBackendOrNull } from "../../backend/backend-context";
   import { initTtd, cleanupTtd } from "../../ttd/main.js";
+  import { store } from "../../ttd/core/store.js";
+  import { eventbus, EVENTS } from "../../ttd/core/eventbus.js";
   import { injectBackend, syncSessionToTtd } from "../../ttd/console-adapter";
   import "../../ttd/styles/console-scoped.css";
 
@@ -31,8 +33,27 @@
   // Svelte 5: bind:this 变量需用 $state 声明,否则 svelte-check 警告 non_reactive_update
   let ttdRoot: HTMLDivElement | undefined = $state();
   let unsubSession: (() => void) | null = null;
+  let unsubTtdStore: (() => void) | null = null;
   let initialized = $state(false);
   let initError = $state<string | null>(null);
+
+  // 界面升级 v1.0 阶段 B.2 + D.1.5: 回溯模式(离开实时位)→ ttd root 加琥珀光晕 class
+  // 回溯判定: selectedVersion < maxVersion 且 maxVersion > 0 (有事实且未在最新位)
+  // D.1.5 新增: 顶部标签 "实时" → "⏪ N% 回溯" + 历史快照横幅 + 退出回溯按钮
+  //   N% = (maxVersion - selectedVersion) / maxVersion (派生 target/current_version)
+  let selectedVersion = $state(0);
+  let maxVersion = $state(0);
+  let rewinding = $derived(maxVersion > 0 && selectedVersion < maxVersion);
+  let rewindPct = $derived(
+    maxVersion > 0
+      ? Math.round(((maxVersion - selectedVersion) / maxVersion) * 100)
+      : 0
+  );
+
+  /** 退出回溯: 跳回最新版本(等价 ttd End 键, emit VERSION_SELECT canonical signal) */
+  function exitRewind() {
+    if (maxVersion > 0) eventbus.emit(EVENTS.VERSION_SELECT, maxVersion);
+  }
 
   onMount(async () => {
     if (!backend) {
@@ -63,6 +84,14 @@
       unsubSession = currentSessionId.subscribe(async (id) => {
         await syncSessionToTtd(id);
       });
+
+      // 5. 订阅 ttd store,驱动琥珀色回溯光晕 (B.2) + 顶部标签/横幅 (D.1.5)
+      //    只读观察 store 状态,不重写 ttd vanilla DOM 渲染逻辑。
+      // ttd store 为 vanilla JS 模块(core/store.js),无 TS 类型;state 显式标注 any
+      unsubTtdStore = store.subscribe((state: any) => {
+        maxVersion = state.views.timeline.maxVersion;
+        selectedVersion = state.selectedVersion;
+      });
     } catch (e) {
       initError = `ttd 初始化失败: ${(e as Error).message}`;
     }
@@ -70,6 +99,7 @@
 
   onDestroy(() => {
     if (unsubSession) unsubSession();
+    if (unsubTtdStore) unsubTtdStore();
     cleanupTtd();
   });
 </script>
@@ -82,6 +112,14 @@
         >可回放 — rewind / diff / causal / what-if(嵌入 ttd v1.0)</span
       >
     </div>
+    <!-- D.1.5: 顶部状态标签 — 实时 / ⏪ N% 回溯(琥珀色) -->
+    <span class="rewind-status" class:rewinding={rewinding} aria-live="polite">
+      {#if rewinding}
+        ⏪ {rewindPct}% 回溯
+      {:else}
+        <span class="live-dot" aria-hidden="true"></span>实时
+      {/if}
+    </span>
   </header>
 
   {#if !backend}
@@ -103,7 +141,19 @@
     </div>
   {:else}
     <!-- ttd 容器:console-scoped.css 限定 .ttd-root 内的样式作用域 -->
-    <div class="ttd-root" bind:this={ttdRoot}>
+    <!-- B.2: 回溯模式加 time-travel-amber class(琥珀光晕 + Fact opacity 0.7) -->
+    <div class="ttd-root" class:time-travel-amber={rewinding} bind:this={ttdRoot}>
+      <!-- D.1.5: 历史快照横幅 — 离开实时位时显示版本号 + 退出回溯按钮 -->
+      {#if rewinding}
+        <div class="rewind-banner" role="status">
+          <span class="banner-text"
+            >📜 正在查看历史快照 · 版本 {selectedVersion}</span
+          >
+          <button class="exit-rewind-btn" onclick={exitRewind}>
+            ✕ 退出回溯
+          </button>
+        </div>
+      {/if}
       <div class="main">
         <aside class="sidebar">
           <h2>会话 (Sessions)</h2>
@@ -158,19 +208,19 @@
     justify-content: space-between;
     align-items: center;
     padding: var(--spacing-md) var(--spacing-lg);
-    border-bottom: 1px solid var(--color-gray-200);
-    background: var(--color-gray-50);
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-primary);
   }
 
   .title-group h1 {
     margin: 0;
     font-size: var(--text-xl);
-    color: var(--color-gray-900);
+    color: var(--text-primary);
   }
 
   .subtitle {
     font-size: var(--text-xs);
-    color: var(--color-gray-500);
+    color: var(--text-secondary);
     margin-left: var(--spacing-sm);
   }
 
@@ -187,7 +237,7 @@
     justify-content: center;
     height: 100%;
     min-height: 300px;
-    color: var(--color-gray-500);
+    color: var(--text-secondary);
     text-align: center;
   }
 
@@ -206,10 +256,87 @@
     align-items: center;
     gap: var(--spacing-sm);
     padding: var(--spacing-sm) var(--spacing-md);
-    background: #fef2f2;
-    border: 1px solid #fecaca;
+    background: color-mix(in srgb, var(--danger) 10%, var(--bg-card));
+    border: 1px solid color-mix(in srgb, var(--danger) 40%, var(--border));
     border-radius: var(--radius-md);
-    color: var(--color-error);
+    color: var(--danger);
     margin: var(--spacing-lg);
+  }
+
+  /* === D.1.5 顶部状态标签 + 历史快照横幅 === */
+  .rewind-status {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: 2px var(--spacing-sm);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    font-weight: var(--font-medium);
+    color: var(--text-secondary);
+    background: var(--bg-card);
+    white-space: nowrap;
+  }
+
+  .rewind-status.rewinding {
+    color: var(--warning);
+    border-color: color-mix(in srgb, var(--warning) 50%, var(--border));
+    background: color-mix(in srgb, var(--warning) 8%, var(--bg-card));
+  }
+
+  .live-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--success) 60%, transparent);
+    animation: live-pulse 2s ease-out infinite;
+  }
+
+  @keyframes live-pulse {
+    0% {
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--success) 60%, transparent);
+    }
+    70% {
+      box-shadow: 0 0 0 6px transparent;
+    }
+    100% {
+      box-shadow: 0 0 0 0 transparent;
+    }
+  }
+
+  /* 历史快照横幅 — 叠在 ttd-root 顶部,琥珀色边框(对齐 01 §2.4) */
+  .rewind-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    padding: var(--spacing-xs) var(--spacing-md);
+    background: color-mix(in srgb, var(--warning) 8%, var(--bg-card));
+    border-bottom: 1px solid color-mix(in srgb, var(--warning) 40%, var(--border));
+    color: var(--warning);
+    font-size: var(--text-xs);
+    font-family: var(--font-mono);
+    flex-shrink: 0;
+  }
+
+  .banner-text {
+    font-weight: var(--font-medium);
+  }
+
+  .exit-rewind-btn {
+    background: transparent;
+    border: 1px solid color-mix(in srgb, var(--warning) 50%, var(--border));
+    border-radius: var(--radius-sm);
+    color: var(--warning);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    padding: 2px var(--spacing-sm);
+    cursor: pointer;
+  }
+
+  .exit-rewind-btn:hover {
+    background: color-mix(in srgb, var(--warning) 15%, transparent);
   }
 </style>

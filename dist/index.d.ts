@@ -1,11 +1,16 @@
 export type { SessionId, ReactorState, SessionState, HistoricalState, SessionAudit, VerifyResult, Fact, FactRecord, DiffResult, CausalChain, CausalEntry, CommandResult, ExecutionBackend } from './backend/types';
 export { HttpBackend } from './backend/http-backend';
 export { provideBackend, useBackend, useBackendOrNull } from './backend/backend-context';
+export type { WorkspaceBackend, WorkspaceRecord, WorkspaceMemberRecord, RuleRecord, RuleVersionRecord, SessionRecord, RuleSessionBinding, SandboxSession, TestDatasetRecord, PublishQueueItem, ProductionStateRecord, ProductionAuditRecord, VerdictContractRecord, VersionClockMapRecord, WorkspaceState, RuleVersionState, SessionBindingState, SandboxStatus, PublishStatus, MemberRole, PublishRole, ActorIdentity, CreateWorkspaceRequest, UpdateWorkspaceRequest, AddMemberRequest, CreateRuleRequest, UpdateRuleContentRequest, CreateSessionRequest, StartSandboxRequest, StartSandboxResponse, CreateTestDatasetRequest, SubmitPublishRequest, ReviewPublishRequest, RollbackRequest, TranslateToTransformRequest, TranslateToTransformResponse, TranslateToConditionalRequest, TranslateToConditionalResponse, CreateVerdictContractRequest, UpdateVerdictContractRequest, EvaluateVerdictRequest, EvaluateVerdictResult, RecordClockRequest } from './backend/workspace-types';
+export { HttpWorkspaceBackend, HttpWorkspaceBackendError } from './backend/http-workspace-backend';
+export { provideWorkspaceBackend, useWorkspaceBackend, useWorkspaceBackendOrNull } from './backend/workspace-context';
 export type { AssistantProvider } from './assistant/types';
 export { provideAssistant, useAssistantOrNull } from './assistant/assistant-context';
-export { rules, selectedRuleId, selectedRule, selectRule, getAllRules, getSelectedRuleId, addRule, updateRule, duplicateRule, deleteRule, importRule, exportRule } from './stores/rules';
-export type { Rule } from './stores/rules';
-export { sessions, currentSessionId, sessionState, commandHistory, isLoading, lastError, reactorVersion, refreshSessions, createSession, selectSession, submitCommand } from './stores/session';
+export { rules, selectedRuleId, selectedRule, migrationNeeded, isOffline, lastError as rulesError, refreshRules, selectRule, selectRuleLocal, loadRuleContent, addRule, updateRule, duplicateRule, deleteRule, importRule, exportRule, checkMigrationNeeded, migrateLegacyRules, getAllRules, getSelectedRuleId, isRuleReadonly, resetRulesStore } from './stores/rules';
+export type { Rule, RuleState } from './stores/rules';
+export { workspaces, currentWorkspace, currentWorkspaceId, workspaceSessions, workspaceSandboxes, publishQueue, productionState, isLoading as isWorkspaceLoading, lastError as workspaceError, refreshWorkspaces, ensureDefaultWorkspace, seedBuiltinRules, selectWorkspace, refreshPublishQueue, refreshProductionState, refreshSandboxes, resetWorkspaceStore } from './stores/workspace';
+export { verdictContracts, currentVerdictContract, lastEvaluateResult, isLoading as isVerdictLoading, lastError as verdictError, refreshVerdictContracts, evaluateVerdict, createVerdictContract, resetVerdictStore } from './stores/verdict';
+export { sessions, currentSessionId, currentWorkspaceSession, sessionState, commandHistory, isLoading as isSessionLoading, lastError as sessionError, reactorPhase, reactorVersion, reactorCausalDepth, reactorPendingIO, refreshSessions, createSession, createWorkspaceSession, closeSession, selectSession, refreshSessionState, submitCommand, subscribeSessionSwitched, resetSessionStore } from './stores/session';
 export type { CommandHistoryEntry } from './stores/session';
 export { auditData, verifyResult, causalSelection, auditLoading, auditError, refreshAudit, verifyAuditChain, fetchCausalChain, clearCausalSelection, resetAuditStore } from './stores/audit';
 export type { CausalSelection } from './stores/audit';
@@ -16,6 +21,7 @@ export { default as ExecutionPadView } from './views/ExecutionPad/ExecutionPad.s
 export { default as StateView } from './views/StateView/StateView.svelte';
 export { default as AuditView } from './views/AuditView/AuditView.svelte';
 export { default as TimeTravelView } from './views/TimeTravel/TimeTravel.svelte';
+export { default as VerdictBadge } from './components/VerdictBadge.svelte';
 export { RuleValidator } from './validators/ruleValidator';
 export type { ValidationError, ValidationResult } from './validators/ruleValidator';
-export declare const CONSOLE_VERSION = "0.1.1";
+export declare const CONSOLE_VERSION = "0.3.0";

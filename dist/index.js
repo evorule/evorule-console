@@ -15,12 +15,21 @@
 //   - AssistantProvider 扩展槽(v0.1.1 加入):默认 null,大众版注入 LLM 实现
 export { HttpBackend } from './backend/http-backend';
 export { provideBackend, useBackend, useBackendOrNull } from './backend/backend-context';
+export { HttpWorkspaceBackend, HttpWorkspaceBackendError } from './backend/http-workspace-backend';
+export { provideWorkspaceBackend, useWorkspaceBackend, useWorkspaceBackendOrNull } from './backend/workspace-context';
 export { provideAssistant, useAssistantOrNull } from './assistant/assistant-context';
 // ============================================================================
 // 3. 状态 stores(跨视图共享)
 // ============================================================================
-export { rules, selectedRuleId, selectedRule, selectRule, getAllRules, getSelectedRuleId, addRule, updateRule, duplicateRule, deleteRule, importRule, exportRule } from './stores/rules';
-export { sessions, currentSessionId, sessionState, commandHistory, isLoading, lastError, reactorVersion, refreshSessions, createSession, selectSession, submitCommand } from './stores/session';
+// --- rules store (阶段 C.2.3 重构:localStorage → WorkspaceBackend) ---
+export { rules, selectedRuleId, selectedRule, migrationNeeded, isOffline, lastError as rulesError, refreshRules, selectRule, selectRuleLocal, loadRuleContent, addRule, updateRule, duplicateRule, deleteRule, importRule, exportRule, checkMigrationNeeded, migrateLegacyRules, getAllRules, getSelectedRuleId, isRuleReadonly, resetRulesStore } from './stores/rules';
+// 注:RuleState 同时存在于 workspace-types,但前端消费入口以 stores/rules 为准
+// --- workspace store (阶段 C.2.1 新增) ---
+export { workspaces, currentWorkspace, currentWorkspaceId, workspaceSessions, workspaceSandboxes, publishQueue, productionState, isLoading as isWorkspaceLoading, lastError as workspaceError, refreshWorkspaces, ensureDefaultWorkspace, seedBuiltinRules, selectWorkspace, refreshPublishQueue, refreshProductionState, refreshSandboxes, resetWorkspaceStore } from './stores/workspace';
+// --- verdict store (阶段 C.2.2 新增) ---
+export { verdictContracts, currentVerdictContract, lastEvaluateResult, isLoading as isVerdictLoading, lastError as verdictError, refreshVerdictContracts, evaluateVerdict, createVerdictContract, resetVerdictStore } from './stores/verdict';
+// --- session store (阶段 C.2.4 改造:createWorkspaceSession + SSE 留桩) ---
+export { sessions, currentSessionId, currentWorkspaceSession, sessionState, commandHistory, isLoading as isSessionLoading, lastError as sessionError, reactorPhase, reactorVersion, reactorCausalDepth, reactorPendingIO, refreshSessions, createSession, createWorkspaceSession, closeSession, selectSession, refreshSessionState, submitCommand, subscribeSessionSwitched, resetSessionStore } from './stores/session';
 export { auditData, verifyResult, causalSelection, auditLoading, auditError, refreshAudit, verifyAuditChain, fetchCausalChain, clearCausalSelection, resetAuditStore } from './stores/audit';
 export { currentView, setView, restoreView, getViewMeta, VIEW_LIST } from './stores/view';
 // ============================================================================
@@ -32,10 +41,14 @@ export { default as StateView } from './views/StateView/StateView.svelte';
 export { default as AuditView } from './views/AuditView/AuditView.svelte';
 export { default as TimeTravelView } from './views/TimeTravel/TimeTravel.svelte';
 // ============================================================================
+// 4.B 通用组件 (阶段 D.3.1)
+// ============================================================================
+export { default as VerdictBadge } from './components/VerdictBadge.svelte';
+// ============================================================================
 // 5. L_console 预校验(G1-G7,与核心仓 TCB 对齐)
 // ============================================================================
 export { RuleValidator } from './validators/ruleValidator';
 // ============================================================================
 // 6. 版本信息
 // ============================================================================
-export const CONSOLE_VERSION = '0.1.1';
+export const CONSOLE_VERSION = '0.3.0';
