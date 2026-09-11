@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 EvoRule Project
-// evorule-console 插件契约 v1 资产面客户端 — 声明式 pack 只读 + 草稿生成
+// evorule-console 插件契约 v1 资产面客户端 — 声明式 pack 只读 + 草稿生成/编译
 //
-// 依据: Plugin Contract v1 §5（D:\knowledge\2-Projects\evorule-plugin\02-Plugin-Contract-v1.md）
+// 依据: Plugin Contract v1.1 §5/§6（D:\knowledge\2-Projects\evorule-plugin\02-Plugin-Contract-v1.md）
 // 端点对齐 evorule-server api/plugin_packs.rs:
 //   - GET  /api/plugins                                          → pack 清单
-//   - GET  /api/plugins/{pack_id}/assets/{kind}                  → 资产只读面（kind ∈ scenes|templates）
+//   - GET  /api/plugins/{pack_id}/assets/{kind}                  → 资产只读面（kind ∈ scenes|templates|flows|node_types）
 //   - POST /api/plugins/templates/{pack_id}/{template_id}/generate → 草稿生成纯函数（不落库,R3）
+//   - POST /api/plugins/flows/{pack_id}/{flow_id}/compile         → 流程编译代理（draft-only,R3;body 空=编译已装载
+//                                                                    流程,{"flow":{...}}=编译画布草稿,契约 v1.1 §6）
 //
 // 设计: 独立轻客户端（不复用 HttpWorkspaceBackend 类型）——插件资产面是
 //   独立契约域；鉴权/错误处理模式与 http-workspace-backend.ts 一致。
@@ -41,7 +43,7 @@ export interface PluginSummary {
   version: string;
   description: string;
   capabilities: string[];
-  assets: { scenes: number; templates: number };
+  assets: { scenes: number; templates: number; flows?: number; node_types?: number };
 }
 
 /** 模板表单参数（契约 §4.3 / §4.5 控件词表） */
@@ -103,6 +105,54 @@ export interface GenerateResult {
     pack_version: string;
     template: string;
     contract_version: string;
+  };
+}
+
+/** 节点类型资产（契约 §4.4；画布节点面板/属性表单唯一来源,R4） */
+export interface NodeTypeAssetRaw {
+  node_type: string;
+  display_name: DisplayName;
+  description?: string;
+  params_form?: ParamFieldRaw[];
+  compile_hint?: { emits: string; note?: string };
+}
+
+/** flow 节点（契约 v1.1 §4.6） */
+export interface FlowNodeRaw {
+  node_id: string;
+  node_type: string;
+  params?: Record<string, unknown>;
+  form_ref?: { scene: string; field: string };
+  threshold?: number;
+}
+
+/** flow 边（契约 v1.1 §4.6；审批出边 guard="approved"） */
+export interface FlowEdgeRaw {
+  from: string;
+  to: string;
+  guard?: string;
+}
+
+/** flow 资产原值（GET assets/flows 元素） */
+export interface FlowAssetRaw {
+  flow_id: string;
+  display_name?: DisplayName;
+  description?: string;
+  version: number;
+  nodes: FlowNodeRaw[];
+  edges: FlowEdgeRaw[];
+}
+
+/** POST compile 响应（R3: 仅草稿 + 来源标记,不落库;source ∈ asset|draft） */
+export interface FlowCompileResult {
+  rule_draft: unknown;
+  provenance: {
+    pack: string;
+    pack_version: string;
+    flow: string;
+    compiler: string;
+    contract_version: string;
+    source: string;
   };
 }
 
@@ -175,6 +225,40 @@ export class PluginPacksClient {
       `/api/plugins/${encodeURIComponent(packId)}/assets/scenes`
     );
     return Array.isArray(j.assets) ? j.assets : [];
+  }
+
+  /** GET /api/plugins/{pack_id}/assets/node_types — 节点类型资产原值（契约 §4.4） */
+  async getNodeTypes(packId: string): Promise<NodeTypeAssetRaw[]> {
+    const j = await this.fetchJson<{ pack: string; kind: string; assets: NodeTypeAssetRaw[] }>(
+      `/api/plugins/${encodeURIComponent(packId)}/assets/node_types`
+    );
+    return Array.isArray(j.assets) ? j.assets : [];
+  }
+
+  /** GET /api/plugins/{pack_id}/assets/flows — 流程资产原值（契约 v1.1 §4.6） */
+  async getFlows(packId: string): Promise<FlowAssetRaw[]> {
+    const j = await this.fetchJson<{ pack: string; kind: string; assets: FlowAssetRaw[] }>(
+      `/api/plugins/${encodeURIComponent(packId)}/assets/flows`
+    );
+    return Array.isArray(j.assets) ? j.assets : [];
+  }
+
+  /**
+   * POST /api/plugins/flows/{pack_id}/{flow_id}/compile — 流程编译代理（R3 draft-only）。
+   * flowDraft 缺省 → 编译已装载的同名 flow 资产；
+   * flowDraft 传入 → 编译画布草稿（server 先过与装载期同一套校验链,R2）。
+   * 校验/门禁失败 → 4xx/502 显式错误（服务端 fail-fast 文案已面向用户,原样抛出）。
+   */
+  async compileFlow(packId: string, flowId: string, flowDraft?: FlowAssetRaw): Promise<FlowCompileResult> {
+    const body = flowDraft ? { flow: flowDraft } : {};
+    return this.fetchJson<FlowCompileResult>(
+      `/api/plugins/flows/${encodeURIComponent(packId)}/${encodeURIComponent(flowId)}/compile`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      }
+    );
   }
 
   /**

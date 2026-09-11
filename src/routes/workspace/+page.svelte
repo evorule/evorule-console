@@ -194,6 +194,9 @@
       <button class="btn-secondary" onclick={() => goto("/workspace/templates")}>
         插件模板
       </button>
+      <button class="btn-secondary" onclick={() => goto("/workspace/flow")}>
+        流程设计
+      </button>
       <button class="btn-secondary" disabled={!$currentWorkspace}>试运行</button>
       <button class="btn-secondary" disabled={!$currentWorkspace}>发布</button>
       <button class="btn-primary" onclick={handleNewRule} disabled={!$currentWorkspace}>
