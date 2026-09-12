@@ -15,6 +15,10 @@
     5. 页面经 loadFlowAsset 投影到画布态——人可继续拖动/改属性,人点击
        编译才走既有链(draft-only,R3);LLM 永不直接 compile/publish
 
+  多轮修订(UV-178 批次D):生成后可继续输入修订指令,history 纯文本对
+  (用户原文 + LLM 回复原文)传给实现方拼对话;上一轮 assistant 内容取
+  当前草稿态(人工编辑可见即所得);每轮由人点击触发,非 agent 编排。
+
   填入前提:parseOk(画布只吃对象);形状/白名单/取值域问题仅提示不阻断
   (人工修正路径始终开放,引擎编译校验兜底)。
 -->
@@ -43,6 +47,9 @@
   let draftJson = $state("");
   let isLoading = $state(false);
   let errorMsg = $state<string | null>(null);
+  // 多轮修订(UV-178 批次D):每轮(用户原文, LLM 回复原文);纯文本对,
+  // 由实现方拼入对话消息。用户驱动的连续修订(每轮人点击),非 agent 编排。
+  let turns = $state<Array<{ user: string; reply: string }>>([]);
 
   // 展示层校验（随草稿编辑实时重算;纯派生,不改产物）
   const checkCtx = $derived.by((): FlowDraftCheckContext => ({
@@ -62,11 +69,30 @@
     }
     isLoading = true;
     errorMsg = null;
+    // 组装 history(首轮为 undefined):此前轮次原文入对话;**上一轮 assistant
+    // 内容取当前草稿态**(textarea 可被人工编辑,修订应基于可见草稿而非
+    // LLM 原始输出);构建须在 draftJson 清空前。
+    const history =
+      turns.length === 0
+        ? undefined
+        : turns
+            .map((tr, i) => {
+              const prevDraft =
+                i === turns.length - 1 && draftJson.trim() ? draftJson : tr.reply;
+              return [
+                { role: "user" as const, content: tr.user },
+                { role: "assistant" as const, content: prevDraft },
+              ];
+            })
+            .flat();
+    const prevDraftJson = draftJson;
     draftJson = "";
     try {
-      const result = await assistant.transpileFlow(description, context);
+      const result = await assistant.transpileFlow(description, context, history);
+      turns = [...turns, { user: description, reply: JSON.stringify(result) }];
       draftJson = JSON.stringify(result, null, 2);
     } catch (e) {
+      draftJson = prevDraftJson; // 失败保留上一轮草稿,修订链不中断
       errorMsg = (e as Error).message || "转译失败,请检查 LLM 配置";
     } finally {
       isLoading = false;
@@ -110,11 +136,18 @@
 
     <main class="dialog-body">
       <section class="step">
-        <label for="transpile-flow-description">1. 用自然语言描述你要设计的流程:</label>
+        <label for="transpile-flow-description">
+          {turns.length > 0 ? "继续修订（基于当前草稿）:" : "1. 用自然语言描述你要设计的流程:"}
+          {#if turns.length > 0}
+            <span class="turn-badge">已修订 {turns.length} 轮</span>
+          {/if}
+        </label>
         <textarea
           id="transpile-flow-description"
           bind:value={description}
-          placeholder="例如:员工提交报销申请,主管审批通过后财务打款,金额超 5000 需总监加签"
+          placeholder={turns.length > 0
+            ? "例如:把审批阈值改成 10000,并在打款前增加财务复核节点"
+            : "例如:员工提交报销申请,主管审批通过后财务打款,金额超 5000 需总监加签"}
           rows="3"
           disabled={isLoading}
         ></textarea>
@@ -124,7 +157,11 @@
             onclick={() => void handleGenerate()}
             disabled={isLoading || !description.trim()}
           >
-            {isLoading ? "转译中…" : "生成流程草稿"}
+            {isLoading
+              ? "转译中…"
+              : turns.length > 0
+                ? "生成修订草稿"
+                : "生成流程草稿"}
           </button>
         </div>
       </section>
@@ -258,6 +295,18 @@
   .step label {
     font-size: var(--text-sm);
     font-weight: var(--font-medium);
+  }
+
+  /* 多轮修订轮次徽标(UV-178 批次D) */
+  .turn-badge {
+    margin-left: var(--spacing-sm);
+    padding: 0 var(--spacing-sm);
+    border: 1px solid color-mix(in srgb, var(--brand) 45%, var(--border));
+    border-radius: var(--radius-md);
+    background: color-mix(in srgb, var(--brand) 10%, var(--bg-card));
+    color: var(--brand);
+    font-size: var(--text-xs);
+    font-weight: 400;
   }
 
   textarea {

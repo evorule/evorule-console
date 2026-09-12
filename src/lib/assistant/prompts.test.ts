@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 EvoRule Project
-// promptTranspileFlow 单测——纯函数,断言资产上下文/schema 标识符/NL 入 prompt
+// promptTranspileFlow/promptReviseFlow 单测——纯函数,断言资产上下文/schema 标识符/NL 入 prompt
 
 import { describe, expect, test } from 'vitest';
-import { promptTranspileFlow } from './prompts';
+import { promptReviseFlow, promptTranspileFlow } from './prompts';
 import type { FlowTranspileContext } from './types';
 
 const CTX: FlowTranspileContext = {
@@ -77,5 +77,70 @@ describe('promptTranspileFlow', () => {
     // 约束强化:flow_id snake_case + edges 顺序
     expect(p).toContain('snake_case');
     expect(p).toContain('edges 顺序与节点链顺序一致');
+  });
+});
+
+// ---- UV-178 批次D:存量规则投影 + 工具引导句 + 多轮修订 prompt ----
+
+describe('promptTranspileFlow 存量规则投影(UV-178 批次D)', () => {
+  test('existingRules 非空时渲染参考节,且明示禁止在草稿中引用规则 id', () => {
+    const ctx: FlowTranspileContext = {
+      ...CTX,
+      existingRules: [
+        { rule_id: 'finance.amount_threshold', description: '金额阈值审批' },
+        { rule_id: 'finance.material_check' },
+      ],
+    };
+    const p = promptTranspileFlow('描述', ctx);
+    expect(p).toContain('存量规则参考');
+    expect(p).toContain('finance.amount_threshold');
+    expect(p).toContain('金额阈值审批');
+    expect(p).toContain('finance.material_check');
+    // 防误用:参考不等于引用
+    expect(p).toContain('不要**在草稿中引用这些规则 id');
+  });
+
+  test('existingRules 缺省/为空时不渲染参考节（旧调用方兼容）', () => {
+    const p1 = promptTranspileFlow('描述', CTX);
+    const p2 = promptTranspileFlow('描述', { ...CTX, existingRules: [] });
+    expect(p1).not.toContain('存量规则参考');
+    expect(p2).not.toContain('存量规则参考');
+  });
+
+  test('server 通道工具引导句恒在(无工具名硬编码,R4/插件实现细节解耦)', () => {
+    const p = promptTranspileFlow('描述', CTX);
+    expect(p).toContain('只读工具白名单');
+    expect(p).toContain('再输出');
+    // 不含 ai-plugin 具体工具名(prompt 与插件实现解耦)
+    expect(p).not.toContain('rules_list');
+    expect(p).not.toContain('pack_assets');
+  });
+});
+
+describe('promptReviseFlow(UV-178 批次D 多轮修订)', () => {
+  test('修订框定入 prompt:完整输出、非差异', () => {
+    const p = promptReviseFlow('把审批阈值改成 10000', CTX);
+    expect(p).toContain('修订请求');
+    expect(p).toContain('完整修订后的 flow JSON');
+    expect(p).toContain('把审批阈值改成 10000');
+  });
+
+  test('修订 prompt 保留首轮全部规格(spec/白名单/取值域/工具引导)', () => {
+    const p = promptReviseFlow('改阈值', CTX);
+    // spec 与资产上下文全量在(修订轮仍以最新 ctx 投影)
+    expect(p).toContain('approval');
+    expect(p).toContain('expense.amount');
+    expect(p).toContain('只输出 flow JSON');
+    expect(p).toContain('只读工具白名单');
+  });
+
+  test('修订 prompt 同样携带存量规则投影', () => {
+    const ctx: FlowTranspileContext = {
+      ...CTX,
+      existingRules: [{ rule_id: 'r1', description: '示例' }],
+    };
+    const p = promptReviseFlow('改阈值', ctx);
+    expect(p).toContain('存量规则参考');
+    expect(p).toContain('r1');
   });
 });
