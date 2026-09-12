@@ -245,6 +245,7 @@
             })),
           }
         : {}),
+      ...(t.out_guards ? { out_guards: t.out_guards } : {}),
     })),
     sceneFields: scenes
       .flatMap((s) =>

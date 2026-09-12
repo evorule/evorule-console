@@ -55,6 +55,12 @@
   const checkCtx = $derived.by((): FlowDraftCheckContext => ({
     nodeTypes: new Set(context.nodeTypes.map((t) => t.node_type)),
     sceneFieldIds: new Set(context.sceneFields.map((f) => f.field_id)),
+    // guard 取值域（契约 v1.2 out_guards 声明投影;全部来自资产,缺省跳过校验）
+    outGuards: new Map(
+      context.nodeTypes
+        .filter((t) => Array.isArray(t.out_guards))
+        .map((t): [string, Set<string>] => [t.node_type, new Set(t.out_guards ?? [])]),
+    ),
   }));
   const check = $derived(validateFlowDraft(draftJson, checkCtx));
 
@@ -199,6 +205,11 @@
               {#if check.unknownFormRefs.length > 0}
                 节点 {check.unknownFormRefs.join("、")} 的 form_ref 不在场景字段取值域
               {/if}
+            </div>
+          {:else if check.badGuards.length > 0}
+            <div class="hint warn">
+              ⚠ 提示(可仍填入,人工修正):节点 {check.badGuards.join("、")} 的出边 guard
+              不在该节点类型 out_guards 声明取值域
             </div>
           {:else}
             <div class="hint">✓ JSON 合法 · node_type 在资产白名单内 · form_ref 在场景取值域内</div>

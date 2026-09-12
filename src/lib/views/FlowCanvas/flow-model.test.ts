@@ -77,6 +77,60 @@ describe('validateFlowDraft（展示层校验,纯提示不阻断）', () => {
   });
 });
 
+describe('validateFlowDraft guard 取值域（契约 v1.2 out_guards 声明面）', () => {
+  // out_guards 声明投影:approval 允许 approved;start/payment 未声明 = 禁 guard
+  const CTX_G: FlowDraftCheckContext = {
+    ...CTX,
+    outGuards: new Map([['approval', new Set(['approved'])]]),
+  };
+
+  test('guard 在声明取值域内 → badGuards 空', () => {
+    const r = validateFlowDraft(GOOD_FLOW, CTX_G);
+    expect(r.badGuards).toEqual([]);
+  });
+
+  test('guard 越域（值不在声明集）→ badGuards 记 from 节点 id', () => {
+    const bad = JSON.stringify({
+      flow_id: 'f',
+      nodes: [
+        { node_id: 'n1', node_type: 'start' },
+        { node_id: 'n2', node_type: 'payment' },
+      ],
+      edges: [{ from: 'n1', to: 'n2', guard: 'approved' }],
+    });
+    const r = validateFlowDraft(bad, CTX_G);
+    expect(r.badGuards).toEqual(['n1']);
+  });
+
+  test('from 类型未声明 out_guards 却带 guard → 越域（缺省=禁 guard）', () => {
+    const bad = JSON.stringify({
+      flow_id: 'f',
+      nodes: [{ node_id: 'n1', node_type: 'approval' }],
+      edges: [{ from: 'n1', to: 'n2', guard: 'rejected' }],
+    });
+    const r = validateFlowDraft(bad, CTX_G);
+    expect(r.badGuards).toEqual(['n1']);
+  });
+
+  test('ctx.outGuards 缺省 → 跳过 guard 校验（旧调用方兼容）', () => {
+    const r = validateFlowDraft(GOOD_FLOW, CTX);
+    expect(r.badGuards).toEqual([]);
+  });
+
+  test('无 guard 的边不在声明面语义内 → 不提示', () => {
+    const ok = JSON.stringify({
+      flow_id: 'f',
+      nodes: [
+        { node_id: 'n1', node_type: 'start' },
+        { node_id: 'n2', node_type: 'approval' },
+      ],
+      edges: [{ from: 'n1', to: 'n2' }],
+    });
+    const r = validateFlowDraft(ok, CTX_G);
+    expect(r.badGuards).toEqual([]);
+  });
+});
+
 describe('loadFlowAsset（AI 草稿落画布投影路径）', () => {
   test('草稿对象 → 画布态（协议字段保留,坐标自动布局）', () => {
     const flow = JSON.parse(GOOD_FLOW);
