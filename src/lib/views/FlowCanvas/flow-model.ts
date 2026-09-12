@@ -93,3 +93,76 @@ export function bezierPath(
   const dx = Math.max(48, Math.abs(x2 - x1) / 2);
   return `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
 }
+
+// ---- NL 草稿展示层校验（纯提示不阻断,不替代引擎 fail-fast） ----
+
+/** 校验上下文 = 资产取值域投影（R4:零领域硬编码,全部由调用方注入） */
+export interface FlowDraftCheckContext {
+  nodeTypes: ReadonlySet<string>;
+  /** form_ref.field 取值域（场景已注册 path 字段;R2） */
+  sceneFieldIds: ReadonlySet<string>;
+}
+
+export interface FlowDraftCheckResult {
+  /** JSON.parse 通过（填入画布的硬前提——画布只吃对象） */
+  parseOk: boolean;
+  /** 顶层形状符合 flow 资产（flow_id/nodes/edges 存在且为数组） */
+  shapeOk: boolean;
+  /** node_type 不在资产白名单的节点（提示,可仍填入人工修正） */
+  unknownNodeTypes: string[];
+  /** form_ref.field 不在场景字段取值域的节点（R2 提示） */
+  unknownFormRefs: string[];
+}
+
+/**
+ * NL→flow 草稿的展示层静态校验:帮人提前发现笔误,**不修改产物、
+ * 不进协议路径**;引擎 fail-fast（compileFlow server 校验）仍是权威。
+ * 校验知识全部来自 ctx（资产投影）,本函数零领域词（R4）。
+ */
+export function validateFlowDraft(
+  jsonStr: string,
+  ctx: FlowDraftCheckContext
+): FlowDraftCheckResult {
+  const result: FlowDraftCheckResult = {
+    parseOk: false,
+    shapeOk: false,
+    unknownNodeTypes: [],
+    unknownFormRefs: []
+  };
+  let flow: unknown;
+  try {
+    flow = JSON.parse(jsonStr);
+  } catch {
+    return result; // parseOk=false:非合法 JSON,无法继续形状校验
+  }
+  result.parseOk = true;
+
+  if (
+    typeof flow !== "object" ||
+    flow === null ||
+    !Array.isArray((flow as { nodes?: unknown }).nodes) ||
+    !Array.isArray((flow as { edges?: unknown }).edges) ||
+    typeof (flow as { flow_id?: unknown }).flow_id !== "string"
+  ) {
+    return result; // shapeOk=false:缺 flow_id/nodes/edges 骨架
+  }
+  result.shapeOk = true;
+
+  for (const n of (flow as { nodes: Array<Record<string, unknown>> }).nodes) {
+    if (typeof n !== "object" || n === null) continue;
+    const nodeType = n.node_type;
+    if (typeof nodeType === "string" && !ctx.nodeTypes.has(nodeType)) {
+      result.unknownNodeTypes.push(String(n.node_id ?? "?"));
+    }
+    const ref = n.form_ref as { field?: unknown } | undefined;
+    if (
+      ref &&
+      typeof ref === "object" &&
+      typeof ref.field === "string" &&
+      !ctx.sceneFieldIds.has(ref.field)
+    ) {
+      result.unknownFormRefs.push(String(n.node_id ?? "?"));
+    }
+  }
+  return result;
+}

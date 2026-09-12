@@ -41,12 +41,14 @@ const stubProvider: AssistantProvider = {
   generateRuleDraft: vi.fn(),
   explainRule: vi.fn(),
   generateInput: vi.fn(),
+  transpileFlow: vi.fn(),
 };
 
 const anotherProvider: AssistantProvider = {
   generateRuleDraft: vi.fn(),
   explainRule: vi.fn(),
   generateInput: vi.fn(),
+  transpileFlow: vi.fn(),
 };
 
 // ============ 重置 mock ============
@@ -179,10 +181,11 @@ describe('evorule-console 自身运行时(未注入 provider)', () => {
     expect(shouldRenderButton).toBe(false);
   });
 
-  test('stubProvider 满足 AssistantProvider 接口(3 方法齐全)', () => {
+  test('stubProvider 满足 AssistantProvider 接口(4 方法齐全,含 P3 transpileFlow)', () => {
     // 验证测试 stub 完整实现了接口(否则类型不符)
     expect(typeof stubProvider.generateRuleDraft).toBe('function');
     expect(typeof stubProvider.explainRule).toBe('function');
     expect(typeof stubProvider.generateInput).toBe('function');
+    expect(typeof stubProvider.transpileFlow).toBe('function');
   });
 });

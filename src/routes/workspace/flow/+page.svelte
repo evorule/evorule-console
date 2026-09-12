@@ -9,6 +9,8 @@
     - 画布：加节点 / 拖动 / 连线（审批出边自动 guard="approved"）/ 删除
     - 属性面板：按 node_types.params_form 渲染（8 控件词表;scene_field 下拉来自场景 path 字段）
     - 导出 flow JSON 草稿 → compile 代理 → 规则草稿预览（JsonTree）+ 复制
+    - AI 转译流程——NL → flow JSON 草稿填入画布（扩展槽消费,
+      assistant 注入才渲染;草稿经 loadFlowAsset 落画布,人确认编译,R3）
   红线对齐:
     - R2:form_ref 取值域 = 场景已注册 path 字段;草稿编译走 server 同一校验链
     - R3:编译产物 draft-only 不落库,生效仍走既有 Draft→Publish 链
@@ -41,6 +43,10 @@
     type SceneAssetRaw,
     type SceneFieldRaw,
   } from "$lib/backend/plugin-packs";
+  import { useAssistantOrNull } from "$lib/assistant/assistant-context";
+  import type { FlowTranspileContext } from "$lib/assistant/types";
+  // NL→flow 草稿转译器（扩展槽消费,assistant=null 时按钮不渲染）
+  import TranspileFlowDialog from "$lib/views/Assistant/TranspileFlowDialog.svelte";
 
   let client: PluginPacksClient | null = null;
   let loading = $state(true);
@@ -64,6 +70,11 @@
   let compileError = $state<string | null>(null);
   let draft = $state<unknown>(null);
   let draftProvenance = $state<Record<string, unknown> | null>(null);
+
+  // LLM 扩展槽（P3）:注入方提供 transpileFlow 实现后 AI 按钮才渲染;
+  // evorule-console 自身不注入（assistant 为 null）,与"无智能"基调一致
+  const assistant = useAssistantOrNull();
+  let transpileOpen = $state(false);
 
   const currentPack = $derived(packs.find((p) => p.id === currentPackId) ?? null);
   const canCompile = $derived(
@@ -206,6 +217,45 @@
     selectedId = null;
     connectFrom = null;
   }
+
+  // ---- P3:NL→flow 草稿落画布（与 loadExisting 同投影路径;人可继续编辑,
+  //      编译仍需人点击——LLM 永不直接 compile,R3） ----
+  function handleAiFill(flow: object) {
+    const loaded = loadFlowAsset(flow as FlowAssetRaw);
+    canvasNodes = loaded.nodes;
+    canvasEdges = loaded.edges;
+    flowId = (flow as { flow_id?: string }).flow_id || "canvas_flow";
+    selectedId = null;
+    connectFrom = null;
+    compileError = null;
+  }
+
+  // ---- P3:转译上下文（页面已加载资产 → ctx 投影,R4 零领域硬编码） ----
+  const transpileCtx = $derived.by((): FlowTranspileContext => ({
+    nodeTypes: nodeTypes.map((t) => ({
+      node_type: t.node_type,
+      display_name: dn(t.display_name, t.node_type),
+      ...(t.description ? { description: t.description } : {}),
+      ...(t.params_form
+        ? {
+            params_form: t.params_form.map((f: ParamFieldRaw) => ({
+              field_id: f.field_id,
+              type: f.type,
+              ...(f.scene_ref ? { scene_ref: f.scene_ref } : {}),
+            })),
+          }
+        : {}),
+    })),
+    sceneFields: scenes
+      .flatMap((s) =>
+        s.business_objects.flatMap((bo) => bo.fields).map((f: SceneFieldRaw) => ({
+          scene_id: s.scene_id,
+          field_id: f.field_id,
+          path: f.path ?? "",
+        })),
+      )
+      .filter((f) => f.path.length > 0),
+  }));
 
   // ---- 属性面板（params_form → 节点位映射,flow 协议知识） ----
   /** params_form 字段映射:role/prompt → params.*;threshold → threshold;
@@ -367,6 +417,11 @@
       <!-- === 画布 === -->
       <section class="canvas-col">
         <div class="canvas-toolbar">
+          {#if assistant}
+            <button class="btn-ai" onclick={() => (transpileOpen = true)} title="用自然语言描述流程,AI 转译为 flow JSON 草稿填入画布(需人工确认编译)">
+              ✨ AI 转译流程
+            </button>
+          {/if}
           <button
             class="btn-secondary"
             disabled={!selectedNode || connectFrom !== null}
@@ -514,6 +569,15 @@
           <JsonTree data={draft} rootLabel="rule_draft" />
         </div>
       </div>
+    {/if}
+
+    <!-- P3:AI 转译流程 Dialog（扩展槽消费;onfill 走 loadFlowAsset 同投影） -->
+    {#if transpileOpen}
+      <TranspileFlowDialog
+        context={transpileCtx}
+        onfill={handleAiFill}
+        onclose={() => (transpileOpen = false)}
+      />
     {/if}
   {/if}
 </div>
@@ -722,6 +786,21 @@
   .toolbar-warn {
     font-size: var(--text-xs);
     color: var(--warning);
+  }
+
+  /* P3:AI 转译入口（扩展槽注入才渲染;与 btn-secondary 同形,品牌色区分） */
+  .btn-ai {
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    cursor: pointer;
+    background: color-mix(in srgb, var(--brand) 10%, var(--bg-card));
+    color: var(--brand);
+    border: 1px solid color-mix(in srgb, var(--brand) 45%, var(--border));
+  }
+
+  .btn-ai:hover {
+    border-color: var(--brand);
   }
 
   .canvas-tip {
