@@ -63,4 +63,19 @@ describe('promptTranspileFlow', () => {
     expect(p).toContain('1 条出边');
     expect(p).toContain('"guard": "approved"');
   });
+
+  test('few-shot 结构示例入 prompt 且标注禁止照抄（prompt 调优）', () => {
+    const p = promptTranspileFlow('描述', CTX);
+    // 形状示例:完整 flow 骨架(guard/formed/threshold/线性链形状)
+    expect(p).toContain('expense_approval_flow');
+    expect(p).toContain('"flow_id": "expense_approval_flow"');
+    expect(p).toContain('"threshold": 5000');
+    expect(p).toContain('"guard": "approved"');
+    // 防照抄标注:示例类型是虚构占位,输出必须取白名单
+    expect(p).toContain('禁止照抄');
+    expect(p).toContain('禁止使用结构示例中的虚构类型');
+    // 约束强化:flow_id snake_case + edges 顺序
+    expect(p).toContain('snake_case');
+    expect(p).toContain('edges 顺序与节点链顺序一致');
+  });
 });

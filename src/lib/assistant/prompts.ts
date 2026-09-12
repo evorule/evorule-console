@@ -62,6 +62,23 @@ evorule flow 资产(契约 v1.1 §4.6)是一个 JSON 对象:
   }
   - params/form_ref/threshold 仅在节点需要时出现;guard 仅审批出边需要
 
+结构示例(仅演示 JSON 形状——node_type/场景/字段为虚构占位,**禁止照抄**,
+实际输出必须只用下方白名单中的 node_type 与场景字段):
+  {
+    "flow_id": "expense_approval_flow",
+    "version": 1,
+    "nodes": [
+      { "node_id": "n1", "node_type": "apply",
+        "form_ref": { "scene": "expense", "field": "amount" } },
+      { "node_id": "n2", "node_type": "approve", "threshold": 5000 },
+      { "node_id": "n3", "node_type": "pay" }
+    ],
+    "edges": [
+      { "from": "n1", "to": "n2" },
+      { "from": "n2", "to": "n3", "guard": "approved" }
+    ]
+  }
+
 可用节点类型(node_type 白名单,原样使用):
 ${nodeLines}
 
@@ -70,9 +87,10 @@ ${fieldLines}
 
 硬约束(违反无法通过编译校验):
   1. 输出严格的 JSON 对象(无注释、无 markdown 包裹、无说明文字)
-  2. node_type 只能取上方白名单;form_ref.field 只能取上方场景字段
-  3. 节点 id 用 n1/n2/… 顺序编号
-  4. v0 线性链:每个节点至多 1 条出边、1 条入边
+  2. node_type 只能取上方白名单;form_ref.field 只能取上方场景字段;
+     禁止使用结构示例中的虚构类型(apply/approve/pay 仅为占位)
+  3. 节点 id 用 n1/n2/… 顺序编号;flow_id 用小写 snake_case 英文
+  4. v0 线性链:每个节点至多 1 条出边、1 条入边;edges 顺序与节点链顺序一致
   5. 审批类节点的出边加 "guard": "approved"
   6. 数值参数用数字类型,字符串用双引号
   7. 描述不明确时按合理默认值填充,不要拒绝
