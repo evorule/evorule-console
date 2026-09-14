@@ -132,7 +132,7 @@ describe('RuleValidator - L_console 预校验', () => {
       });
       expect(RuleValidator.validate(ioRequestJson).valid).toBe(true);
 
-      // 测试 collect 类型（C10: 白名单 4→6; 递归只走 branch.on_true/on_false, each 内指令层不误判）
+      // collect/merge 已退役（69 号清理 2026-09-14）→ G2 无效元指令类型
       const collectJson = JSON.stringify({
         transform: [
           {
@@ -141,19 +141,13 @@ describe('RuleValidator - L_console 预校验', () => {
               from: '__exec__.payload.llm_response.tool_calls',
               each: { type: 'call_service', params: { service_name: '{{name}}' } }
             }
-          },
-          {
-            type: 'branch',
-            params: {
-              domain: { type: 'all', domains: [] },
-              on_true: []
-            }
           }
         ]
       });
-      expect(RuleValidator.validate(collectJson).valid).toBe(true);
+      const collectResult = RuleValidator.validate(collectJson);
+      expect(collectResult.valid).toBe(false);
+      expect(collectResult.errors.some(e => e.gate === 'G2' && e.message.includes('collect'))).toBe(true);
 
-      // 测试 merge 类型（ReAct 循环收口: messages + tool_result + next_instruction）
       const mergeJson = JSON.stringify({
         transform: [
           {
@@ -163,17 +157,12 @@ describe('RuleValidator - L_console 预校验', () => {
               tool_result: '__exec__.payload.tool_result',
               next_instruction: { type: 'call_service', params: { service_name: 'advisor' } }
             }
-          },
-          {
-            type: 'branch',
-            params: {
-              domain: { type: 'all', domains: [] },
-              on_true: []
-            }
           }
         ]
       });
-      expect(RuleValidator.validate(mergeJson).valid).toBe(true);
+      const mergeResult = RuleValidator.validate(mergeJson);
+      expect(mergeResult.valid).toBe(false);
+      expect(mergeResult.errors.some(e => e.gate === 'G2' && e.message.includes('merge'))).toBe(true);
     });
 
     it('应该递归检查子指令的元指令类型', () => {
