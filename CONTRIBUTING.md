@@ -255,7 +255,7 @@ test(e2e): add theme toggle persistence case
 - ❌ **不要在网络栈层硬编码进视图 / store**(破坏执行后端抽象)
 - ❌ **不要在 evorule-console 内嵌入 LLM / AI 编排**(机制层必须保持无智能)
 - ❌ **不要引入非 JSON 数据格式**(破坏透明性)
-- ❌ **不要用 `{@html}` 渲染用户/规则内容**(XSS 风险)
+- ❌ **不要用 `{@html}` 渲染项目方/规则内容**(XSS 风险)
 - ❌ **不要把审计哈希计算搬到前端**(破坏 TCB 纯净)
 - ❌ **不要修改 `src/lib/ttd/` 副本的业务逻辑**(ttd 源仓独立维护;升级走整体同步,见 CHANGELOG)
 - ❌ **不要提交 secrets / API key / 个人信息 / 内部地址**(公开仓)

@@ -77,7 +77,7 @@ evorule-console 是前端面板(SvelteKit),其安全边界与后端规则引擎�
 
 | 边界 | 风险 | 缓解 |
 | --- | --- | --- |
-| 用户规则 JSON 输入 / 编辑 | XSS(规则内容含 `<script>` 注入到 DOM) | Svelte 默认文本转义;**禁用 `{@html}`** 渲染规则内容;`L_console` 预校验(G1-G7)拦截非法结构 |
+| 项目方规则 JSON 输入 / 编辑 | XSS(规则内容含 `<script>` 注入到 DOM) | Svelte 默认文本转义;**禁用 `{@html}`** 渲染规则内容;`L_console` 预校验(G1-G7)拦截非法结构 |
 | 视图/主题 localStorage 持久化 | 跨测试 / 跨会话状态串扰 | 每次使用前 `localStorage.clear()`;不持久化敏感数据 |
 | 开发期 HTTP 后端 | 调用 evorule-server loopback 暴露面 | 开发后端仅绑定 `127.0.0.1`;生产环境由衍生版(大众版/高级版)替换 `ExecutionBackend` 实现 |
 | `ttd` 嵌入副本 | 源仓安全修复未同步到本仓副本 | ttd 升级时在 CHANGELOG 记录同步(见 `src/lib/ttd/VERSION.md`) |

@@ -43,11 +43,11 @@
 
 ## [0.2.0] - 2026-08-10
 
-**领域专家友好化 + 业务规则模型统一 + 编辑器重构 + 三份战略文档** — 本次 MINOR 升级聚焦"不懂 JSON 的领域专家"用户体验，统一 BusinessRule 共享模型，重构编辑器默认 form 模式，并落地产品战略/SDK 草案/金融示范三份设计文档。是 evorule-console 从"开发者工具"向"领域专家产品"转型的里程碑。
+**领域专家友好化 + 业务规则模型统一 + 编辑器重构 + 三份战略文档** — 本次 MINOR 升级聚焦"不懂 JSON 的领域专家"项目方体验，统一 BusinessRule 共享模型，重构编辑器默认 form 模式，并落地产品战略/SDK 草案/金融示范三份设计文档。是 evorule-console 从"开发者工具"向"领域专家产品"转型的里程碑。
 
 ### ⚠️ Breaking Changes
 
-- **编辑器默认模式 JSON → form**：`RuleEditor.svelte` 默认渲染业务化表单（form 模式），JSON 模式改为高级用户主动切换。领域专家看到的不再是裸 JSON，而是结构化表单。
+- **编辑器默认模式 JSON → form**：`RuleEditor.svelte` 默认渲染业务化表单（form 模式），JSON 模式改为高级项目方主动切换。领域专家看到的不再是裸 JSON，而是结构化表单。
 - **删除 `RuleEditor.svelte` 旧组件**：被新的 `RuleLibrary.svelte` + `BusinessRuleForm.svelte` 替代。外部代码若直接 import 旧组件会 break。
 - **onboarding 完全重写**：迁移到 BusinessRule 模型，删除 `block` 动作（与 evorule 核心 6 域类型对齐），引导流程从"填 JSON"改为"填表单"。
 - **gte/gt 域类型翻译**：evorule 核心仅支持 eq/lt/exists/instruction/all/not，server 端 `rule_translate.rs` 将 gte 翻译为 not(lt)、gt 翻译为 not(all([lt,eq]))，并实现对称回译。
@@ -63,7 +63,7 @@
 - **组件库目录**（`src/lib/components/`）：可复用 UI 组件抽离。
 - **字体资源**（`src/lib/assets/fonts/`）：产品字体本地化。
 - **三份战略设计文档**（`设计文档/`，gitignore 私有）：
-  - `11_产品战略备忘录_v1.0.md`：定位/目标用户/LLM 角色/许可证矩阵/SDK 分级/先通用后垂直路径
+  - `11_产品战略备忘录_v1.0.md`：定位/目标项目方/LLM 角色/许可证矩阵/SDK 分级/先通用后垂直路径
   - `12_SDK_API草案_v1.0.md`：完整版 + 云端简化版 SDK 设计，对齐 AGPL 双轨许可
   - `13_金融咨询Agent示范规格_v1.0.md`：金融领域垂直示范，复用 100% 通用层能力
 - **Playwright 自动化脚本**（`src/routes/workspace/editor/__tests__/9.3-unsupported-readonly.spec.ts`）：验证 9 个 unsupported 规则表单控件的 disabled 状态。

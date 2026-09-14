@@ -10,7 +10,7 @@
 [![svelte](https://img.shields.io/badge/svelte-5-ff3e00)](https://svelte.dev)
 [![check](https://img.shields.io/badge/svelte--check-0%20errors-brightgreen)](#验证)
 
-evorule-console 是 evorule 的灵魂产品内核 — 完整的规则引擎面板,展现 evorule 作为「确定性执行规则引擎」的 7 大本质属性。**不含 LLM、不绑定网络栈**,用户画像为政府、军工、金融、法律、私有技术等保密性要求极高的场景。
+evorule-console 是 evorule 的灵魂产品内核 — 完整的规则引擎面板,展现 evorule 作为「确定性执行规则引擎」的 7 大本质属性。**不含 LLM、不绑定网络栈**,项目方画像为政府、军工、金融、法律、私有技术等保密性要求极高的场景。
 
 > **双形态**:`@evorule/console` 既是 SvelteKit 应用(可直接运行),又是 npm 包(可被大众版/高级版 `npm install` 复用)。
 

@@ -184,7 +184,7 @@ interface ExecutionBackend {
 
 - 当前 session 的 payload(可折叠 JSON 树 + 语法高亮)
 - reactor 状态(phase/step/causal_depth/pending_io)
-- 体现"JSON-in/out 自解释":用户直接读 JSON 理解状态
+- 体现"JSON-in/out 自解释":项目方直接读 JSON 理解状态
 
 **审计视图**:
 
