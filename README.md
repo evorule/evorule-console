@@ -3,6 +3,10 @@
 
 # evorule-console
 
+> **仓库角色**：本仓库是 **GitHub 镜像**。权威源（primary repo）在 **Gitee**：[https://gitee.com/evorule/evorule-console](https://gitee.com/evorule/evorule-console)。
+> Issue / PR 请提交到 Gitee，GitHub 侧仅供镜像与推广展示。
+
+
 > evorule 规则引擎面板 — **无智能,只有执行** 的响应式规则引擎前端
 
 [![version](https://img.shields.io/badge/version-0.3.0-blue)](./CHANGELOG.md)
