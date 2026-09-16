@@ -109,4 +109,4 @@ evorule-console 首次公开发布。SvelteKit 应用 + npm 包双形态，无 L
 
 **作者**: EvoRule Project
 **邮箱**: <evorulelab@gmail.com>
-**Gitee**: <https://gitee.com/evo-rule-lab/evorule-console>
+**Gitee**: <https://gitee.com/evorule/evorule-console>

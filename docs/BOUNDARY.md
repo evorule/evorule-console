@@ -6,7 +6,7 @@
 # evorule-console 边界与定位
 
 > **Status**: v0.1.0
-> **仓库**: gitee.com/evo-rule-lab/evorule-console
+> **仓库**: gitee.com/evorule/evorule-console
 > **本文档定位**: 只定"边界与定位",不定具体功能(功能规格见 [SPEC.md](./SPEC.md))
 
 ---

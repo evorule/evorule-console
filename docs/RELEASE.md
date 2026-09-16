@@ -16,7 +16,7 @@
 ## 0. 前置检查(每次发版必做)
 
 - [ ] 当前分支为 `main`(或发版分支),工作区干净(`git status` 无未提交改动)
-- [ ] 远程 `origin` 指向 `https://gitee.com/evo-rule-lab/evorule-console.git`
+- [ ] 远程 `origin` 指向 `https://gitee.com/evorule/evorule-console.git`
 - [ ] 已与最新 `origin/main` 同步(`git pull --ff-only`)
 
 ---
@@ -180,7 +180,7 @@ npm init -y
 npm install svelte @sveltejs/kit
 
 # 6.2 经 git URL + tag 安装内核
-npm install git+https://gitee.com/evo-rule-lab/evorule-console.git#vX.Y.Z
+npm install git+https://gitee.com/evorule/evorule-console.git#vX.Y.Z
 
 # 6.3 验证导入
 node -e "const c = require('@evorule/console'); console.log('version:', c.CONSOLE_VERSION)"
@@ -201,7 +201,7 @@ git push origin :refs/tags/vX.Y.Z
 ## 7. 发版后清理
 
 - [ ] 删除本地 `dist/`(可选,因 `.gitignore` 已忽略,不影响后续 commit)
-- [ ] 在大众版仓的 `package.json` 中更新依赖版本:`"@evorule/console": "git+https://gitee.com/evo-rule-lab/evorule-console.git#vX.Y.Z"`
+- [ ] 在大众版仓的 `package.json` 中更新依赖版本:`"@evorule/console": "git+https://gitee.com/evorule/evorule-console.git#vX.Y.Z"`
 - [ ] 更新大众版 CHANGELOG,记录依赖内核版本
 
 ---

@@ -218,7 +218,7 @@ EvoRule Project(以下简称"许可方")授予您(以下简称"被许可方")**�
 
 **许可方**: EvoRule Project
 **邮箱**: <evorulelab@gmail.com>
-**网站**: <https://gitee.com/evo-rule-lab/evorule-console>
+**网站**: <https://gitee.com/evorule/evorule-console>
 
 **被许可方**: ________________________
 **联系人**: ________________________

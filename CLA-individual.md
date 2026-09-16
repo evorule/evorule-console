@@ -192,7 +192,7 @@
 - **项目**: EvoRule
 - **版权人**: EvoRule Project
 - **邮箱**: <evorulelab@gmail.com>
-- **Gitee**: <https://gitee.com/evo-rule-lab/evorule>
+- **Gitee**: <https://gitee.com/evorule/evorule>
 
 ---
 

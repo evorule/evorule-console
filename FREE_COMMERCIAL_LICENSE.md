@@ -117,7 +117,7 @@ EvoRule 采用 **AGPL-3.0-or-later 许可证** 作为基础开源协议,以确�
 
 ### 步骤 2:在线提交申请
 
-访问 [https://gitee.com/evo-rule-lab/evorule-console/issues](申请表单),填写以下信息:
+访问 [https://gitee.com/evorule/evorule-console/issues](申请表单),填写以下信息:
 
 - 机构全名、统一社会信用代码
 - 机构类型(下拉选择)
@@ -192,7 +192,7 @@ EvoRule Project 审核团队将在 10 个工作日内:
 **疑问咨询**:
 
 - 📧 邮箱:<evorulelab@gmail.com>(主题加 `[Free Commercial License]`)
-- 🌐 Gitee Issues:<https://gitee.com/evo-rule-lab/evorule-console/issues>
+- 🌐 Gitee Issues:<https://gitee.com/evorule/evorule-console/issues>
 - 📞 商务电话(工作日 10:00-17:00):联系 <evorulelab@gmail.com> 获取
 
 ---

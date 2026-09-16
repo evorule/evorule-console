@@ -132,8 +132,8 @@ evorule-console 采用**双轨许可模式**,为不同项目方提供灵活选�
 
 - **销售咨询**: <evorulelab@gmail.com>
 - **技术支持**: <evorulelab@gmail.com>(同邮箱)
-- **官方网站**: <https://gitee.com/evo-rule-lab/evorule-console>
-- **Gitee 组织**: <https://gitee.com/evo-rule-lab>
+- **官方网站**: <https://gitee.com/evorule/evorule-console>
+- **Gitee 组织**: <https://gitee.com/evorule>
 
 ---
 

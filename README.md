@@ -47,7 +47,7 @@ evorule-console 是 evorule 的灵魂产品内核 — 完整的规则引擎面�
 ### 形态 1:作为 SvelteKit 应用直接运行(本仓)
 
 ```bash
-git clone https://gitee.com/evo-rule-lab/evorule-console.git
+git clone https://gitee.com/evorule/evorule-console.git
 cd evorule-console
 npm install
 npm run dev    # 访问 http://localhost:5173
@@ -177,7 +177,7 @@ evorule-console/
 
 ## 贡献
 
-- Issue / PR 通过 gitee.com/evo-rule-lab/evorule-console 提交
+- Issue / PR 通过 gitee.com/evorule/evorule-console 提交
 - 贡献者需签署 CLA(后续补充)
 - 开发约定:见 [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) 阶段任务
 

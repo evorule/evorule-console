@@ -77,7 +77,7 @@
 
 ## 🐛 报告 Bug
 
-使用 [Gitee Issues](https://gitee.com/evo-rule-lab/evorule-console/issues)。
+使用 [Gitee Issues](https://gitee.com/evorule/evorule-console/issues)。
 
 **报告模板**:
 
@@ -264,9 +264,9 @@ test(e2e): add theme toggle persistence case
 
 ## 📞 联系
 
-- **Gitee Issues**: <https://gitee.com/evo-rule-lab/evorule-console/issues>
+- **Gitee Issues**: <https://gitee.com/evorule/evorule-console/issues>
 - **邮箱**: <evorulelab@gmail.com>
-- **组织**: [EvoRule Lab](https://gitee.com/evo-rule-lab)
+- **组织**: [EvoRule](https://gitee.com/evorule)
 
 ---
 

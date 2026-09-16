@@ -51,5 +51,5 @@ evorule-console 遵循 EvoRule 项目的核心设计原则:
 - **项目**: evorule-console — evorule 规则引擎面板内核
 - **作者**: EvoRule Project
 - **邮箱**: <evorulelab@gmail.com>
-- **组织**: [EvoRule Lab](https://gitee.com/evo-rule-lab)
-- **Gitee**: <https://gitee.com/evo-rule-lab/evorule-console>
+- **组织**: [EvoRule](https://gitee.com/evorule)
+- **Gitee**: <https://gitee.com/evorule/evorule-console>
