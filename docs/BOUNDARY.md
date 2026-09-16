@@ -56,7 +56,7 @@
 1. 它是灵魂产品,必须保持独立存在,不被衍生产品绑架
 2. 它是大众版和高级版的共同基础,独立建仓保证演化对称(两个衍生产品都基于同一内核)
 3. 跟 evorule-server、evorule-sdk 独立建仓的演化路径一致(成熟后分仓)
-4. 原在 evorule-application 仓孵化,成熟后分仓独立(v0.1.0)
+4. 原在内部应用仓孵化,成熟后分仓独立(v0.1.0)
 
 ### 5.1 三独立仓模型
 
@@ -88,7 +88,6 @@ evorule-console 不含联网,但要展现 evorule 的执行能力(evorule-reacto
 | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | **evorule**(核心)       | 提供机制层能力(reactor/governance/tcb),evorule-console 消费                                                                                    |
 | **evorule-server**      | 大众版的执行后端实现(本地 HTTP);evorule-console 本身不直接依赖                                                                                 |
-| **evorule-application** | evorule-console 原孵化仓(已分仓独立);ttd 源码已整体复制进本仓 `src/lib/ttd/`                                                                   |
 | **evo-agent**           | 平行独立产品,有自己的产品定位(编程 agent/助手 agent/特定领域 agent);可能复用 evorule-console,也可能不复用;**evorule-console 不依赖 evo-agent** |
 | **evorule-sdk**         | evorule-console 可能用 SDK 调 evorule 能力(待功能规格定)                                                                                       |
 
