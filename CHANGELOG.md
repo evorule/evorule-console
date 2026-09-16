@@ -32,7 +32,7 @@
 
 - **插件模板页（通用表单薄切片,Plugin Contract v1）** — 工作空间顶栏新增「插件模板」入口,新路由 `/workspace/templates`:列出 server 已装载声明式 pack 的规则模板 → 按 `params_form` 渲染通用表单（8 控件词表;scene_field 下拉来源锁定为场景中声明了 path 的字段）→ 调用 generate 纯函数面 → 草稿 JSON 预览（JsonTree）与一键复制。草稿不落库,生效仍走既有 Draft→Publish 链
 - **插件资产面客户端** — `src/lib/backend/plugin-packs.ts`:pack 清单 / 场景 / 模板 / 草稿生成四端点的轻客户端（默认 127.0.0.1:18080 loopback 免认证,server 启用 `--auth-token` 时经 `localStorage 'evorule.authToken'` 传 Bearer）;8 项单元测试覆盖端点/鉴权头/错误处理
-- **操作者身份注入（ActorIdentity）**：`HttpWorkspaceBackend` 构造函数新增可选第三参 `actor?: ActorIdentity`（`{ name, role? }`，从 `workspace-types` 导出）。传入后，沙盒编排（`started_by`/`closed_by`/`?requester=`）与发布链路（`submitted_by`/`reviewed_by`/`operated_by` + `role`）携带真实操作者，server 审计链归属不再失真（上游债务清偿）。
+- **操作者身份注入（ActorIdentity）**：`HttpWorkspaceBackend` 构造函数新增可选第三参 `actor?: ActorIdentity`（`{ name, role? }`，从 `workspace-types` 导出）。传入后，沙盒编排（`started_by`/`closed_by`/`?requester=`）与发布链路（`submitted_by`/`reviewed_by`/`operated_by` + `role`）携带真实操作者，server 审计链归属不再失真。
 - **审计归属 fail-fast**：`actor` 已配置但缺 `role` 时，发布侧三方法（`submitPublish`/`reviewPublish`/`emergencyRollback`）如实抛错并附修复指引；`actor` 整体未配置时回落历史内置值 `console` 并每实例 `console.warn` 一次（dev/演示路径兼容）。
 
 ### 🐛 修复
