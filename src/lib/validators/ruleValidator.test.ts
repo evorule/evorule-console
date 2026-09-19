@@ -132,7 +132,7 @@ describe('RuleValidator - L_console 预校验', () => {
       });
       expect(RuleValidator.validate(ioRequestJson).valid).toBe(true);
 
-      // collect/merge 已退役（69 号清理 2026-09-14）→ G2 无效元指令类型
+      // collect/merge 已退役（规则清理 2026-09-14）→ G2 无效元指令类型
       const collectJson = JSON.stringify({
         transform: [
           {

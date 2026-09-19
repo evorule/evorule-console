@@ -115,7 +115,7 @@ ${naturalLanguage}
 }
 
 /**
- * 流程修订 prompt(多轮转译第 2+ 轮;UV-178 批次D)。
+ * 流程修订 prompt(多轮转译第 2+ 轮;批次D)。
  *
  * 与首轮 promptTranspileFlow 同规格(spec/ctx 全量,取当时最新资产投影),
  * 仅把任务框定为"修订":LLM 在对话历史(前轮草稿)基础上输出**完整修订后的

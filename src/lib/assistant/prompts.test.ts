@@ -80,9 +80,9 @@ describe('promptTranspileFlow', () => {
   });
 });
 
-// ---- UV-178 批次D:存量规则投影 + 工具引导句 + 多轮修订 prompt ----
+// ---- 批次D:存量规则投影 + 工具引导句 + 多轮修订 prompt ----
 
-describe('promptTranspileFlow 存量规则投影(UV-178 批次D)', () => {
+describe('promptTranspileFlow 存量规则投影(批次D)', () => {
   test('existingRules 非空时渲染参考节,且明示禁止在草稿中引用规则 id', () => {
     const ctx: FlowTranspileContext = {
       ...CTX,
@@ -117,7 +117,7 @@ describe('promptTranspileFlow 存量规则投影(UV-178 批次D)', () => {
   });
 });
 
-describe('promptReviseFlow(UV-178 批次D 多轮修订)', () => {
+describe('promptReviseFlow(批次D 多轮修订)', () => {
   test('修订框定入 prompt:完整输出、非差异', () => {
     const p = promptReviseFlow('把审批阈值改成 10000', CTX);
     expect(p).toContain('修订请求');

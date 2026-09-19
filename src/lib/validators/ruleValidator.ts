@@ -17,7 +17,7 @@
  *
  * 检查项(7 条,与核心仓 SPEC 的对齐见每条 G 注释):
  * G1: JSON 格式合法性
- * G2: 元指令类型合法性(set, push, branch, io_request) → 对齐 _shared/v1.0.json transform_rule (公开白名单 4 元指令 = dispatch − enforce, 权威源 tcb executor dispatch; collect/merge 已退役 69 号清理; enforce 仅 tier=meta, 业务文件由 server 装载门禁拒载 UV-147)
+ * G2: 元指令类型合法性(set, push, branch, io_request) → 对齐 _shared/v1.0.json transform_rule (公开白名单 4 元指令 = dispatch − enforce, 权威源 tcb executor dispatch; collect/merge 已退役规则清理; enforce 仅 tier=meta, 业务文件由 server 装载门禁拒载 回归验证)
  * G3: I/O 双路径模式(io_request 必须在 exists(__io_result__) 分支内)
  * G4: 域类型合法性(eq, lt, exists, instruction, all, not)     → 对齐 TCB_SPEC.md T2 (6 域类型有限性)
  * G5: 路径引用格式(__ 前缀必须符合 __exec__.payload.xxx)
@@ -43,7 +43,7 @@ export interface ValidationResult {
 }
 
 // 对齐 _shared/v1.0.json transform_rule 枚举(公开白名单 4 元指令): 权威源 evorule-tcb/src/executor.rs dispatch
-// (collect/merge 已退役 69 号清理; enforce 仅 tier=meta 文件, 业务文件不得出现 UV-147)
+// (collect/merge 已退役规则清理; enforce 仅 tier=meta 文件, 业务文件不得出现 回归验证)
 const VALID_META_INSTRUCTIONS = ['set', 'push', 'branch', 'io_request'];
 const VALID_DOMAIN_TYPES = ['eq', 'lt', 'exists', 'instruction', 'all', 'not'];
 const MAX_RECURSION_DEPTH = 64;

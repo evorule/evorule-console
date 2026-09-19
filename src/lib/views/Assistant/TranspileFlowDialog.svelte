@@ -15,7 +15,7 @@
     5. 页面经 loadFlowAsset 投影到画布态——人可继续拖动/改属性,人点击
        编译才走既有链(draft-only,R3);LLM 永不直接 compile/publish
 
-  多轮修订(UV-178 批次D):生成后可继续输入修订指令,history 纯文本对
+  多轮修订(批次D):生成后可继续输入修订指令,history 纯文本对
   (用户原文 + LLM 回复原文)传给实现方拼对话;上一轮 assistant 内容取
   当前草稿态(人工编辑可见即所得);每轮由人点击触发,非 agent 编排。
 
@@ -47,7 +47,7 @@
   let draftJson = $state("");
   let isLoading = $state(false);
   let errorMsg = $state<string | null>(null);
-  // 多轮修订(UV-178 批次D):每轮(用户原文, LLM 回复原文);纯文本对,
+  // 多轮修订(批次D):每轮(用户原文, LLM 回复原文);纯文本对,
   // 由实现方拼入对话消息。用户驱动的连续修订(每轮人点击),非 agent 编排。
   let turns = $state<Array<{ user: string; reply: string }>>([]);
 
@@ -308,7 +308,7 @@
     font-weight: var(--font-medium);
   }
 
-  /* 多轮修订轮次徽标(UV-178 批次D) */
+  /* 多轮修订轮次徽标(批次D) */
   .turn-badge {
     margin-left: var(--spacing-sm);
     padding: 0 var(--spacing-sm);
