@@ -258,7 +258,7 @@ src/lib/ttd/
 
 ### 4.3 同步策略
 
-- ttd 在原仓(evorule-application)独立维护(可单独发布)
+- ttd 在原仓独立维护(可单独发布)
 - evorule-console 复制 ttd 源码时,记录版本号(`src/lib/ttd/VERSION.md`,标注 copied from ttd v1.0)
 - ttd 升级时,在 evorule-console 的 CHANGELOG 记录同步
 

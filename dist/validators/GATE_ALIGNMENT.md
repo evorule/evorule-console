@@ -7,7 +7,7 @@
 
 > **Status**: 权威(本文件是 evorule-console 预校验层与核心仓门禁的映射依据)
 > **适用范围**: src/lib/validators/ruleValidator.ts
-> **依赖**: 核心仓 `D:\evorule\GATE_REFERENCE.md`(跨模块门控索引,权威)
+> **依赖**: 核心仓 `GATE_REFERENCE.md`(跨模块门控索引,权威)
 > **本文档定位**: 显式分层 + 跨仓引用,确保 evorule-console 预校验不脱离核心仓门禁
 
 ---
@@ -106,10 +106,10 @@ Phase 2 RuleLibrary 视图编辑器实时显示 L_console G1-G7 状态:
 
 ## 6. 相关文件
 
-- 核心仓权威索引: `D:\evorule\GATE_REFERENCE.md`
-- 核心仓 TCB 规范: `D:\evorule\evorule-tcb\TCB_SPEC.md`
-- 核心仓 Reactor 规范: `D:\evorule\evorule-reactor\REACTOR_SPEC.md`
-- 核心仓 Governance 规范: `D:\evorule\evorule-governance\GOVERNANCE_SPEC.md`
+- 核心仓权威索引: `GATE_REFERENCE.md`
+- 核心仓 TCB 规范: `evorule-tcb/TCB_SPEC.md`
+- 核心仓 Reactor 规范: `evorule-reactor/REACTOR_SPEC.md`
+- 核心仓 Governance 规范: `evorule-governance/GOVERNANCE_SPEC.md`
 - 本仓 L_console 实施: `src/lib/validators/ruleValidator.ts`
 - 本仓 L_console 测试: `src/lib/validators/ruleValidator.test.ts`
 

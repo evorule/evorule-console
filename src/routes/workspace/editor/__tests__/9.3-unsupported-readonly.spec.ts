@@ -8,9 +8,9 @@
 //! 前置条件
 //! ================================================================
 //!   1. console 跑在 http://localhost:5173
-//!      D:\evorule-console> npm run dev          (端口 = 5173)
+//!      evorule-console> npm run dev          (端口 = 5173)
 //!   2. server  跑在 http://127.0.0.1:18080
-//!      D:\evorule-server> cargo run --bin evorule-server -- --addr 127.0.0.1:18080 --allowed-origins http://localhost:5173
+//!      evorule-server> cargo run --bin evorule-server -- --addr 127.0.0.1:18080 --allowed-origins http://localhost:5173
 //!   3. workspace.db 内已有工作空间 (若没有,先走 onboarding 创建一个)
 //!   4. Playwright 浏览器已安装 (首次需执行: npx playwright install chromium)
 //!
@@ -27,7 +27,7 @@
 //!   npx vitest run src/routes/workspace/editor/__tests__/9.3-unsupported-readonly.spec.ts
 //!
 //! ================================================================
-//! 附录 A: 最小 playwright.config.ts (放 D:\evorule-console\playwright.config.ts)
+//! 附录 A: 最小 playwright.config.ts (放项目根 playwright.config.ts)
 //! ================================================================
 //!   import { defineConfig, devices } from "@playwright/test";
 //!   export default defineConfig({
